@@ -15,17 +15,16 @@ For the quantitative analysis and the plotting of the extracted data this tool i
 
 1. [Introduction](#Introdurction)
 2. [How to use](#Howtouse)
-   1. [Setup the environement](#Setup the environement)
+   1. [Setup](#Setup)
    2. [Usage](#Usage)
 3. [Contributing](#Contributing)
 4. [Links](#Links)
 
 ## How to use
 
-### Setup the environement
+### Setup
 
-* **Python**
-  The tool is written in Python and the version **3.8.6** is used.
+* The tool is written in Python and the version **3.8.6** is used.
 * **Installation of used libaries**
   The used libaries (that are not installed by default) are listed in the **`requirements.txt`** file.
   To install them use the command: *pip install -r `requirements.txt`*
