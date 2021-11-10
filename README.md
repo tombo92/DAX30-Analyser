@@ -52,4 +52,4 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 Helpfull links:
 
-* [wiki sensor overview](https://wiki.msasafety.com/display/WHT/Bluetooth+Pressure+Sensors)
+* [link](https://letmegooglethat.com/)
