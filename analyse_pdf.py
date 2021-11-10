@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # @Date    : 2021-10-27 16:58:54
-# @Author  : Tom Brandherm (tom.brandherm@msasafety.com)
+# @Author  : Liadan & Tom
 # @Python  : 3.8.6
 # @Link    : link
 # @Version : 0.0.1
@@ -12,19 +12,12 @@ PDF reader to count specific keywords.
 # =========================================================================== #
 #  SECTION: Imports
 # =========================================================================== #
-
-
-from types import FunctionType
-
-from pandas.core.groupby.generic import DataFrameGroupBy
 import pdfplumber
 import os
 import glob
 import time
 import datetime
-import numpy as np
 import matplotlib.pyplot as plt
-from typing import List
 import pandas as pd
 import re
 
@@ -32,12 +25,13 @@ import re
 #  SECTION: Global definitions
 # =========================================================================== #
 ABSOLUTE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__)))
-PDF_PATH = os.path.join(ABSOLUTE_PATH, "adidas", "*")
+PDF_PATH = os.path.join(ABSOLUTE_PATH, "PDF-Data", "adidas", "*")
 
 # =========================================================================== #
 #  SECTION: Class definitions
 # =========================================================================== #
 class Analayser:
+    #TODO change hardcoded kexwords to read in from file
     keywords = ['Digitalisierung',
                 'Künstliche Intelligenz',
                 'Technologie',
@@ -62,7 +56,9 @@ class Analayser:
 
     def export_data_to_excel(self):
         df = self.__get_transposed_extracted_data()
-        df.to_excel(f'output_{self.company}.xlsx', engine='xlsxwriter')
+        filename = f'output_{self.company}.xlsx'
+        path = os.path.join(ABSOLUTE_PATH, "extracted_data", filename)
+        df.to_excel(path, engine='xlsxwriter')
 
     def plot_extracted_data(self, debug=True):
         df = self.__get_transposed_extracted_data()
@@ -100,7 +96,9 @@ class Analayser:
                         )
         
         if not debug:
-            plt.savefig(f'output_{self.company}.png', dpi=250)
+            filename = f'output_{self.company}.png'
+            path = os.path.join(ABSOLUTE_PATH, "plots", filename)
+            plt.savefig(path, dpi=250)
         plt.show()
         
     def read_in_excel_data(self, file: str) -> None:
@@ -148,7 +146,15 @@ class Analayser:
 #  SECTION: Function definitions
 # =========================================================================== #
 
-def timing(func: FunctionType):
+def timing(func):
+    """
+    Measures working time of a function
+
+    Parameters
+    ----------
+    func : function
+        function where the time is measured
+    """
     def wrap(*args, **kwargs):
         time1 = time.time()
         ret = func(*args, **kwargs)
@@ -159,17 +165,23 @@ def timing(func: FunctionType):
         return ret
     return wrap
 
+
+
 @timing
-def main():
+def main(analyse_pdf = True):
     analyser = Analayser(PDF_PATH)
-    #analyser.analyse_company_data()
-    analyser.read_in_excel_data(f'output_{analyser.company}.xlsx')
-    #analyser.export_data_to_excel()
+    if analyse_pdf:
+        analyser.analyse_company_data()
+    else:
+        filename = f'output_{analyser.company}.xlsx'
+        path = os.path.join(ABSOLUTE_PATH, "extracted_data", filename)
+        analyser.read_in_excel_data(path)
+    analyser.export_data_to_excel()
     analyser.plot_extracted_data(debug=False)
 
 # =========================================================================== #
 #  SECTION: Main Body
 # =========================================================================== #
 if __name__ == '__main__':
-    main()
+    main(analyse_pdf=False)
 
