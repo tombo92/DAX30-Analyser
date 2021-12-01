@@ -31,15 +31,10 @@ PDF_PATH = os.path.join(ABSOLUTE_PATH, "PDF-Data", "adidas", "*")
 #  SECTION: Class definitions
 # =========================================================================== #
 class Analayser:
-    #TODO change hardcoded kexwords to read in from file
-    keywords = ['Digitalisierung',
-                'Künstliche Intelligenz',
-                'Technologie',
-                'KI',
-                'AI',
-                'Internet']
+
 
     def __init__(self, directory: str) -> None:
+        self.keywords = self.read_keyword_from_file(os.path.join(ABSOLUTE_PATH, 'keywords.xlsx'))
         self.files = glob.glob(directory)
         self.company = directory.split('\\')[-2]
         self.__extracted_data = pd.DataFrame(index=self.keywords)
@@ -104,6 +99,10 @@ class Analayser:
     def read_in_excel_data(self, file: str) -> None:
         self.__extracted_data = pd.read_excel(
             file, index_col=0, header=0, engine='openpyxl').T
+        
+    def read_keyword_from_file(self, file:str)->list:
+        df = pd.read_excel(file, header=0, engine='openpyxl')
+        return df['Keywords'].to_list()
 
     def __extract_data_from_text(self, text: str, year: str):
         word_frequencies = list()

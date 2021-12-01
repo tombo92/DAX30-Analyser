@@ -1,4 +1,5 @@
 pdfplumber
 matplotlib
 pandas
-re
+xlsxwriter
+openpyxl
