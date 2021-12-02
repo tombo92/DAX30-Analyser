@@ -20,13 +20,13 @@ import datetime
 import matplotlib.pyplot as plt
 import pandas as pd
 import re
+from pikepdf import Pdf
+
 
 # =========================================================================== #
 #  SECTION: Global definitions
 # =========================================================================== #
 ABSOLUTE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__)))
-PDF_PATH = os.path.join(ABSOLUTE_PATH, "PDF-Data", "adidas", "*")
-
 # =========================================================================== #
 #  SECTION: Class definitions
 # =========================================================================== #
@@ -34,7 +34,7 @@ class Analayser:
 
 
     def __init__(self, directory: str) -> None:
-        self.keywords = self.read_keyword_from_file(os.path.join(ABSOLUTE_PATH, 'keywords.xlsx'))
+        self.keywords = self.read_keywords_from_file(os.path.join(ABSOLUTE_PATH, 'keywords.xlsx'))
         self.files = glob.glob(directory)
         self.company = directory.split('\\')[-2]
         self.__extracted_data = pd.DataFrame(index=self.keywords)
@@ -100,7 +100,7 @@ class Analayser:
         self.__extracted_data = pd.read_excel(
             file, index_col=0, header=0, engine='openpyxl').T
         
-    def read_keyword_from_file(self, file:str)->list:
+    def read_keywords_from_file(self, file:str)->list:
         df = pd.read_excel(file, header=0, engine='openpyxl')
         return df['Keywords'].to_list()
 
@@ -112,6 +112,7 @@ class Analayser:
 
     def __extract_text_from_pdf(self, file: str) -> str:
         text = ''
+        self.__decrypt_pdf_file(file)
         with pdfplumber.open(file) as pdf:
             for i, page in enumerate(pdf.pages):
                 try:
@@ -119,6 +120,10 @@ class Analayser:
                 except AttributeError:
                     self.__suspicious_pages.append((file, i))
         return text
+    
+    def __decrypt_pdf_file(self, file:str):
+        pdf = Pdf.open(file, allow_overwriting_input=True)
+        pdf.save(file)
 
     def __get_transposed_extracted_data(self) -> pd.DataFrame:
         return self.__extracted_data.T
@@ -126,11 +131,7 @@ class Analayser:
     def __add_new_extracted_data(self, new_data: list, year: str) -> None:
         self.__extracted_data[year] = pd.Series(new_data, index=self.keywords)
         
-    def __progressBar(self, current, total, barLength=20):
-        percent = float(current) * 100 / total
-        arrow = '-' * int(percent/100 * barLength - 1) + '>'
-        spaces = ' ' * (barLength - len(arrow))
-        print('Progress: [%s%s] %d %%' % (arrow, spaces, percent), end='\r')
+    
         
     def __print_files_for_double_check(self):
         if self.__suspicious_pages:
@@ -139,7 +140,11 @@ class Analayser:
             for file, page in self.__suspicious_pages:
                 print(file, page)
     
-    
+    def __progressBar(self, current, total, barLength=20):
+        percent = float(current) * 100 / total
+        arrow = '-' * int(percent/100 * barLength - 1) + '>'
+        spaces = ' ' * (barLength - len(arrow))
+        print('Progress: [%s%s] %d %%' % (arrow, spaces, percent), end='\r')
     
 # =========================================================================== #
 #  SECTION: Function definitions
@@ -168,19 +173,22 @@ def timing(func):
 
 @timing
 def main(analyse_pdf = True):
-    analyser = Analayser(PDF_PATH)
-    if analyse_pdf:
-        analyser.analyse_company_data()
-    else:
-        filename = f'output_{analyser.company}.xlsx'
-        path = os.path.join(ABSOLUTE_PATH, "extracted_data", filename)
-        analyser.read_in_excel_data(path)
-    analyser.export_data_to_excel()
-    analyser.plot_extracted_data(debug=False)
+    for company in glob.glob("PDF-Data/*/")[1:]:
+        company_path = os.path.join(ABSOLUTE_PATH, company, "*")
+        analyser = Analayser(company_path)
+        print(f"Start checking: {analyser.company}\n")
+        if analyse_pdf:
+            analyser.analyse_company_data()
+        else:
+            filename = f'output_{analyser.company}.xlsx'
+            path = os.path.join(ABSOLUTE_PATH, "extracted_data", filename)
+            analyser.read_in_excel_data(path)
+        analyser.export_data_to_excel()
+        analyser.plot_extracted_data(debug=False)
 
 # =========================================================================== #
 #  SECTION: Main Body
 # =========================================================================== #
 if __name__ == '__main__':
-    main(analyse_pdf=False)
+    main(analyse_pdf=True)
 
