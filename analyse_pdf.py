@@ -44,7 +44,11 @@ class Analayser:
         for i, file in enumerate(self.files):
             self.__progressBar(i, len(self.files))
             year = re.findall(r"[0-9]{4}", file)[-1]
-            file_text: str = self.__extract_text_from_pdf(file)
+            file_text:str = ''
+            if self.__is_txt_existing(file):
+                file_text = self.__extract_text_from_txt(file)
+            else:
+                file_text = self.__extract_text_from_pdf(file)
             self.__extract_data_from_text(file_text, year)
         self.__progressBar(len(self.files), len(self.files))
         self.__print_files_for_double_check()
@@ -52,7 +56,8 @@ class Analayser:
     def export_data_to_excel(self):
         df = self.__get_transposed_extracted_data()
         filename = f'output_{self.company}.xlsx'
-        path = os.path.join(ABSOLUTE_PATH, "extracted_data", filename)
+        path = os.path.join(ABSOLUTE_PATH, "extracted_data",
+                            "word_countings", filename)
         df.to_excel(path, engine='xlsxwriter')
 
     def plot_extracted_data(self, debug=True):
@@ -119,6 +124,15 @@ class Analayser:
                     text += '\n'+page.extract_text().lower()
                 except AttributeError:
                     self.__suspicious_pages.append((file, i))
+        self.__save_extracted_text(file, text)
+        return text
+
+    def __extract_text_from_txt(self, file:str)->str:
+        txt_file = file.split('\\')[-1].replace('pdf', 'txt')
+        path = os.path.join(
+            ABSOLUTE_PATH, "extracted_data", "extracted_texts", self.company)
+        with open(os.path.join(path, txt_file), "r", encoding="utf-8") as text_file:
+            text = text_file.read()
         return text
     
     def __decrypt_pdf_file(self, file:str):
@@ -131,7 +145,25 @@ class Analayser:
     def __add_new_extracted_data(self, new_data: list, year: str) -> None:
         self.__extracted_data[year] = pd.Series(new_data, index=self.keywords)
         
-    
+    def __save_extracted_text(self, file:str, text:str) -> None:
+        new_file = file.split('\\')[-1].replace('pdf', 'txt')
+        new_path = os.path.join(
+            ABSOLUTE_PATH, "extracted_data", "extracted_texts", self.company)
+        try:
+            os.makedirs(new_path)
+        except FileExistsError:
+            # directory already exists
+            pass
+        with open(os.path.join(new_path, new_file), "w", encoding="utf-8") as text_file:
+            text_file.write(text)
+            
+    def __is_txt_existing(self, file:str)->bool:
+        txt_file = file.split('\\')[-1].replace('pdf', 'txt')
+        path = os.path.join(
+            ABSOLUTE_PATH, "extracted_data", "extracted_texts", self.company)
+        if os.path.isdir(path):
+            return os.path.isfile(os.path.join(path, txt_file))
+        return False
         
     def __print_files_for_double_check(self):
         if self.__suspicious_pages:
@@ -173,7 +205,7 @@ def timing(func):
 
 @timing
 def main(analyse_pdf = True):
-    for company in glob.glob("PDF-Data/*/")[1:]:
+    for company in glob.glob("PDF-Data/*/"):
         company_path = os.path.join(ABSOLUTE_PATH, company, "*")
         analyser = Analayser(company_path)
         print(f"Start checking: {analyser.company}\n")
@@ -181,11 +213,11 @@ def main(analyse_pdf = True):
             analyser.analyse_company_data()
         else:
             filename = f'output_{analyser.company}.xlsx'
-            path = os.path.join(ABSOLUTE_PATH, "extracted_data", filename)
+            path = os.path.join(ABSOLUTE_PATH, "extracted_data","word_countings", filename)
             analyser.read_in_excel_data(path)
         analyser.export_data_to_excel()
         analyser.plot_extracted_data(debug=False)
-
+        break
 # =========================================================================== #
 #  SECTION: Main Body
 # =========================================================================== #
