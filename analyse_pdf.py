@@ -32,7 +32,6 @@ ABSOLUTE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 # =========================================================================== #
 class Analayser:
 
-
     def __init__(self, directory: str) -> None:
         self.keywords = self.read_keywords_from_file(os.path.join(ABSOLUTE_PATH, 'keywords.xlsx'))
         self.files = glob.glob(directory)
@@ -99,7 +98,9 @@ class Analayser:
             filename = f'output_{self.company}.png'
             path = os.path.join(ABSOLUTE_PATH, "plots", filename)
             plt.savefig(path, dpi=250)
-        plt.show()
+            plt.close()
+        else:
+            plt.show()
         
     def read_in_excel_data(self, file: str) -> None:
         self.__extracted_data = pd.read_excel(
@@ -208,7 +209,7 @@ def main(analyse_pdf = True):
     for company in glob.glob("PDF-Data/*/"):
         company_path = os.path.join(ABSOLUTE_PATH, company, "*")
         analyser = Analayser(company_path)
-        print(f"Start checking: {analyser.company}\n")
+        print(f"\nStart checking: {analyser.company}\n")
         if analyse_pdf:
             analyser.analyse_company_data()
         else:
@@ -217,7 +218,6 @@ def main(analyse_pdf = True):
             analyser.read_in_excel_data(path)
         analyser.export_data_to_excel()
         analyser.plot_extracted_data(debug=False)
-        break
 # =========================================================================== #
 #  SECTION: Main Body
 # =========================================================================== #
