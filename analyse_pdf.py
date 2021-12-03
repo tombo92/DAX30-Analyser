@@ -33,10 +33,11 @@ ABSOLUTE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 class Analayser:
 
     def __init__(self, directory: str) -> None:
-        self.keywords = self.read_keywords_from_file(os.path.join(ABSOLUTE_PATH, 'keywords.xlsx'))
+        self.keywords:pd.DataFrame = self.read_keywords_from_file(os.path.join(ABSOLUTE_PATH, 'keywords.xlsx'))
+        self.header:list =  [col for col in self.keywords.columns if not "Unnamed" in col]
         self.files = glob.glob(directory)
         self.company = directory.split('\\')[-2]
-        self.__extracted_data = pd.DataFrame(index=self.keywords)
+        self.__extracted_data = pd.DataFrame(index=self.header)
         self.__suspicious_pages = list()
 
     def analyse_company_data(self):
@@ -106,14 +107,20 @@ class Analayser:
         self.__extracted_data = pd.read_excel(
             file, index_col=0, header=0, engine='openpyxl').T
         
-    def read_keywords_from_file(self, file:str)->list:
-        df = pd.read_excel(file, header=0, engine='openpyxl')
-        return df['Keywords'].to_list()
+    def read_keywords_from_file(self, file:str)->pd.DataFrame:
+        return pd.read_excel(file, header=0, engine='openpyxl')
 
     def __extract_data_from_text(self, text: str, year: str):
         word_frequencies = list()
-        for elem in self.keywords:
-            word_frequencies.append(text.count(elem.lower()))
+        for col in self.keywords.columns:
+            if not "Unnamed" in col:
+                keywords_list = self.keywords[col].dropna().tolist()
+                temp_word_frequencies = list()
+                for elem in keywords_list:
+                    temp_word_frequencies.append(text.count(elem.lower()))
+                word_frequencies.append(sum(temp_word_frequencies))
+            else:
+                break
         self.__add_new_extracted_data(word_frequencies, year)
 
     def __extract_text_from_pdf(self, file: str) -> str:
@@ -144,7 +151,7 @@ class Analayser:
         return self.__extracted_data.T
 
     def __add_new_extracted_data(self, new_data: list, year: str) -> None:
-        self.__extracted_data[year] = pd.Series(new_data, index=self.keywords)
+        self.__extracted_data[year] = pd.Series(new_data, index=self.header)
         
     def __save_extracted_text(self, file:str, text:str) -> None:
         new_file = file.split('\\')[-1].replace('pdf', 'txt')
