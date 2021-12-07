@@ -20,31 +20,35 @@ import datetime
 import matplotlib.pyplot as plt
 import pandas as pd
 import re
+from pikepdf import Pdf
+
 
 # =========================================================================== #
 #  SECTION: Global definitions
 # =========================================================================== #
 ABSOLUTE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__)))
-PDF_PATH = os.path.join(ABSOLUTE_PATH, "PDF-Data", "adidas", "*")
-
 # =========================================================================== #
 #  SECTION: Class definitions
 # =========================================================================== #
 class Analayser:
 
-
     def __init__(self, directory: str) -> None:
-        self.keywords = self.read_keyword_from_file(os.path.join(ABSOLUTE_PATH, 'keywords.xlsx'))
+        self.keywords:pd.DataFrame = self.read_keywords_from_file(os.path.join(ABSOLUTE_PATH, 'keywords.xlsx'))
+        self.header:list =  [col for col in self.keywords.columns if not "Unnamed" in col]
         self.files = glob.glob(directory)
         self.company = directory.split('\\')[-2]
-        self.__extracted_data = pd.DataFrame(index=self.keywords)
+        self.__extracted_data = pd.DataFrame(index=self.header)
         self.__suspicious_pages = list()
 
     def analyse_company_data(self):
         for i, file in enumerate(self.files):
             self.__progressBar(i, len(self.files))
             year = re.findall(r"[0-9]{4}", file)[-1]
-            file_text: str = self.__extract_text_from_pdf(file)
+            file_text:str = ''
+            if self.__is_txt_existing(file):
+                file_text = self.__extract_text_from_txt(file)
+            else:
+                file_text = self.__extract_text_from_pdf(file)
             self.__extract_data_from_text(file_text, year)
         self.__progressBar(len(self.files), len(self.files))
         self.__print_files_for_double_check()
@@ -52,7 +56,8 @@ class Analayser:
     def export_data_to_excel(self):
         df = self.__get_transposed_extracted_data()
         filename = f'output_{self.company}.xlsx'
-        path = os.path.join(ABSOLUTE_PATH, "extracted_data", filename)
+        path = os.path.join(ABSOLUTE_PATH, "extracted_data",
+                            "word_countings", filename)
         df.to_excel(path, engine='xlsxwriter')
 
     def plot_extracted_data(self, debug=True):
@@ -94,43 +99,79 @@ class Analayser:
             filename = f'output_{self.company}.png'
             path = os.path.join(ABSOLUTE_PATH, "plots", filename)
             plt.savefig(path, dpi=250)
-        plt.show()
+            plt.close()
+        else:
+            plt.show()
         
     def read_in_excel_data(self, file: str) -> None:
         self.__extracted_data = pd.read_excel(
             file, index_col=0, header=0, engine='openpyxl').T
         
-    def read_keyword_from_file(self, file:str)->list:
-        df = pd.read_excel(file, header=0, engine='openpyxl')
-        return df['Keywords'].to_list()
+    def read_keywords_from_file(self, file:str)->pd.DataFrame:
+        return pd.read_excel(file, header=0, engine='openpyxl')
 
     def __extract_data_from_text(self, text: str, year: str):
         word_frequencies = list()
-        for elem in self.keywords:
-            word_frequencies.append(text.count(elem.lower()))
+        for col in self.keywords.columns:
+            if not "Unnamed" in col:
+                keywords_list = self.keywords[col].dropna().tolist()
+                temp_word_frequencies = list()
+                for elem in keywords_list:
+                    temp_word_frequencies.append(text.count(elem.lower()))
+                word_frequencies.append(sum(temp_word_frequencies))
+            else:
+                break
         self.__add_new_extracted_data(word_frequencies, year)
 
     def __extract_text_from_pdf(self, file: str) -> str:
         text = ''
+        self.__decrypt_pdf_file(file)
         with pdfplumber.open(file) as pdf:
             for i, page in enumerate(pdf.pages):
                 try:
                     text += '\n'+page.extract_text().lower()
                 except AttributeError:
                     self.__suspicious_pages.append((file, i))
+        self.__save_extracted_text(file, text)
         return text
+
+    def __extract_text_from_txt(self, file:str)->str:
+        txt_file = file.split('\\')[-1].replace('pdf', 'txt')
+        path = os.path.join(
+            ABSOLUTE_PATH, "extracted_data", "extracted_texts", self.company)
+        with open(os.path.join(path, txt_file), "r", encoding="utf-8") as text_file:
+            text = text_file.read()
+        return text
+    
+    def __decrypt_pdf_file(self, file:str):
+        pdf = Pdf.open(file, allow_overwriting_input=True)
+        pdf.save(file)
 
     def __get_transposed_extracted_data(self) -> pd.DataFrame:
         return self.__extracted_data.T
 
     def __add_new_extracted_data(self, new_data: list, year: str) -> None:
-        self.__extracted_data[year] = pd.Series(new_data, index=self.keywords)
+        self.__extracted_data[year] = pd.Series(new_data, index=self.header)
         
-    def __progressBar(self, current, total, barLength=20):
-        percent = float(current) * 100 / total
-        arrow = '-' * int(percent/100 * barLength - 1) + '>'
-        spaces = ' ' * (barLength - len(arrow))
-        print('Progress: [%s%s] %d %%' % (arrow, spaces, percent), end='\r')
+    def __save_extracted_text(self, file:str, text:str) -> None:
+        new_file = file.split('\\')[-1].replace('pdf', 'txt')
+        new_path = os.path.join(
+            ABSOLUTE_PATH, "extracted_data", "extracted_texts", self.company)
+        try:
+            os.makedirs(new_path)
+        except FileExistsError:
+            # directory already exists
+            pass
+        with open(os.path.join(new_path, new_file), "w", encoding="utf-8") as text_file:
+            text_file.write(text)
+            
+    def __is_txt_existing(self, file:str)->bool:
+        txt_file = file.split('\\')[-1].replace('pdf', 'txt')
+        path = os.path.join(
+            ABSOLUTE_PATH, "extracted_data", "extracted_texts", self.company)
+        if os.path.isdir(path):
+            return os.path.isfile(os.path.join(path, txt_file))
+        return False
         
     def __print_files_for_double_check(self):
         if self.__suspicious_pages:
@@ -139,7 +180,11 @@ class Analayser:
             for file, page in self.__suspicious_pages:
                 print(file, page)
     
-    
+    def __progressBar(self, current, total, barLength=20):
+        percent = float(current) * 100 / total
+        arrow = '-' * int(percent/100 * barLength - 1) + '>'
+        spaces = ' ' * (barLength - len(arrow))
+        print('Progress: [%s%s] %d %%' % (arrow, spaces, percent), end='\r')
     
 # =========================================================================== #
 #  SECTION: Function definitions
@@ -168,19 +213,21 @@ def timing(func):
 
 @timing
 def main(analyse_pdf = True):
-    analyser = Analayser(PDF_PATH)
-    if analyse_pdf:
-        analyser.analyse_company_data()
-    else:
-        filename = f'output_{analyser.company}.xlsx'
-        path = os.path.join(ABSOLUTE_PATH, "extracted_data", filename)
-        analyser.read_in_excel_data(path)
-    analyser.export_data_to_excel()
-    analyser.plot_extracted_data(debug=False)
-
+    for company in glob.glob("PDF-Data/*/"):
+        company_path = os.path.join(ABSOLUTE_PATH, company, "*")
+        analyser = Analayser(company_path)
+        print(f"\nStart checking: {analyser.company}\n")
+        if analyse_pdf:
+            analyser.analyse_company_data()
+        else:
+            filename = f'output_{analyser.company}.xlsx'
+            path = os.path.join(ABSOLUTE_PATH, "extracted_data","word_countings", filename)
+            analyser.read_in_excel_data(path)
+        analyser.export_data_to_excel()
+        analyser.plot_extracted_data(debug=False)
 # =========================================================================== #
 #  SECTION: Main Body
 # =========================================================================== #
 if __name__ == '__main__':
-    main(analyse_pdf=False)
+    main(analyse_pdf=True)
 
