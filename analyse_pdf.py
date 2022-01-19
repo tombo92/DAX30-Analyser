@@ -33,8 +33,8 @@ ABSOLUTE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 class Analayser:
 
     def __init__(self, directory: str) -> None:
-        self.keywords:pd.DataFrame = self.read_keywords_from_file(os.path.join(ABSOLUTE_PATH, 'keywords.xlsx'))
-        self.header:list =  [col for col in self.keywords.columns if not "Unnamed" in col]
+        self.keywords: pd.DataFrame = self.read_keywords_from_file(os.path.join(ABSOLUTE_PATH, 'keywords.xlsx'))
+        self.header: list =  [col for col in self.keywords.columns if not "Unnamed" in col]
         self.files = glob.glob(directory)
         self.company = directory.split('\\')[-2]
         self.__extracted_data = pd.DataFrame(index=self.header)
@@ -66,25 +66,25 @@ class Analayser:
         ax = df.plot.bar(rot=0,
                         grid=True,
                         title=self.company,
-                        colormap="winter",
+                        colormap="tab20",
                         figsize=(8, 4))
         ax.set_xlabel("year")
         ax.set_ylabel("occurence")
-        
+
         # line chart
         annual_sum_up = df.sum(axis=1).reset_index()
         annual_sum_up.rename({0: "sum"}, inplace=True, axis=1)
         annual_sum_up.plot( y='sum',
-                            color='orange', 
+                            color='orange',
                             secondary_y=True,
-                            ax=ax, 
-                            xlim=ax.get_xlim(), 
+                            ax=ax,
+                            xlim=ax.get_xlim(),
                             legend=False)
         plt.ylabel('absolute occurence of technical terms',
-                    rotation=-90, 
+                    rotation=-90,
                     labelpad=15)
         plt.legend(loc='upper left')
-        
+
         for p in ax.patches:
             ax.annotate(p.get_height(),
                         (p.get_x() + p.get_width() / 2., p.get_height()),
@@ -94,7 +94,7 @@ class Analayser:
                         textcoords='offset points'
                         # ,rotation= 90
                         )
-        
+
         if not debug:
             filename = f'output_{self.company}.png'
             path = os.path.join(ABSOLUTE_PATH, "plots", filename)
@@ -102,11 +102,11 @@ class Analayser:
             plt.close()
         else:
             plt.show()
-        
+
     def read_in_excel_data(self, file: str) -> None:
         self.__extracted_data = pd.read_excel(
             file, index_col=0, header=0, engine='openpyxl').T
-        
+
     def read_keywords_from_file(self, file:str)->pd.DataFrame:
         return pd.read_excel(file, header=0, engine='openpyxl')
 
@@ -142,7 +142,7 @@ class Analayser:
         with open(os.path.join(path, txt_file), "r", encoding="utf-8") as text_file:
             text = text_file.read()
         return text
-    
+
     def __decrypt_pdf_file(self, file:str):
         pdf = Pdf.open(file, allow_overwriting_input=True)
         pdf.save(file)
@@ -152,7 +152,7 @@ class Analayser:
 
     def __add_new_extracted_data(self, new_data: list, year: str) -> None:
         self.__extracted_data[year] = pd.Series(new_data, index=self.header)
-        
+
     def __save_extracted_text(self, file:str, text:str) -> None:
         new_file = file.split('\\')[-1].replace('pdf', 'txt')
         new_path = os.path.join(
@@ -164,7 +164,7 @@ class Analayser:
             pass
         with open(os.path.join(new_path, new_file), "w", encoding="utf-8") as text_file:
             text_file.write(text)
-            
+
     def __is_txt_existing(self, file:str)->bool:
         txt_file = file.split('\\')[-1].replace('pdf', 'txt')
         path = os.path.join(
@@ -172,20 +172,20 @@ class Analayser:
         if os.path.isdir(path):
             return os.path.isfile(os.path.join(path, txt_file))
         return False
-        
+
     def __print_files_for_double_check(self):
         if self.__suspicious_pages:
             print("There are some suspicious pages where no text was found.\nPlease double check and adjust the exported data.")
             print("                            FILE                                ||                            PAGE                                ")
             for file, page in self.__suspicious_pages:
                 print(file, page)
-    
+
     def __progressBar(self, current, total, barLength=20):
         percent = float(current) * 100 / total
         arrow = '-' * int(percent/100 * barLength - 1) + '>'
         spaces = ' ' * (barLength - len(arrow))
         print('Progress: [%s%s] %d %%' % (arrow, spaces, percent), end='\r')
-    
+
 # =========================================================================== #
 #  SECTION: Function definitions
 # =========================================================================== #
@@ -225,6 +225,7 @@ def main(analyse_pdf = True):
             analyser.read_in_excel_data(path)
         analyser.export_data_to_excel()
         analyser.plot_extracted_data(debug=False)
+
 # =========================================================================== #
 #  SECTION: Main Body
 # =========================================================================== #
