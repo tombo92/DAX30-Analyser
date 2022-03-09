@@ -9,7 +9,7 @@ In connection with a SHK ("**S**tudentische **H**ilfs**K**raft") project the AI 
 * plotting the extracted data
 * comparison of the results
 
-For the quantitative analysis and the plotting of the extracted data this tool is for. 
+For the quantitative analysis and the plotting of the extracted data this tool is for.
 
 ## Table of Contents
 
@@ -28,6 +28,8 @@ For the quantitative analysis and the plotting of the extracted data this tool i
 * **Installation of used libaries**
   The used libaries (that are not installed by default) are listed in the **`requirements.txt`** file.
   To install them use the command: *pip install -r `requirements.txt`*
+* to install the german nlp-model execute:
+  `python -m spacy download de_dep_news_trf`
 
 ### Usage
 
@@ -41,7 +43,7 @@ if __name__ == '__main__':
     main(analyse_pdf=False)
 ```
 
-The `analyse_pdf` parameter is per default on True. 
+The `analyse_pdf` parameter is per default on True.
 
 ## Contributing
 

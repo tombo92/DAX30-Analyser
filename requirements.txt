@@ -4,3 +4,4 @@ pandas
 xlsxwriter
 openpyxl
 pikepdf
+spacy
