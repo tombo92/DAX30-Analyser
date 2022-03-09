@@ -14,14 +14,14 @@ airi data analyser
 import glob
 import os
 import re
-from string import punctuation
 
 import pandas as pd
 from DataHandler.excel_handler import ExcelHandler
 from DataHandler.pdf_handler import PdfHandler
 from DataHandler.txt_handler import TxtHandler
 from main import ABSOLUTE_PATH
-import spacy
+from preprocessing import NlpPreprocessor
+
 # =========================================================================== #
 #  SECTION: Global definitions
 # =========================================================================== #
@@ -41,11 +41,11 @@ class AiriAnalyser:
             col for col in self.__keywords.columns if "Unnamed" not in col]
         self.__extracted_data: pd.DataFrame = pd.DataFrame(index=self.__header)
         self.__read_pdf: bool = read_pdf
-        self.__nlp = spacy.load("de_dep_news_trf")
         self.__files: str = None
         self.__company: str = None
         self.__word_countings: pd.DataFrame = None
         self.__current_year = None
+        self.__preprocessor: NlpPreprocessor = NlpPreprocessor()
 
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Getter/Setter
@@ -74,7 +74,7 @@ class AiriAnalyser:
                 file_text = self.__extract_text_from_pdf(file)
             else:
                 file_text = self.__extract_text_from_txt(file)
-            tokens = self.__tokenize_with_nlp(file_text)
+            tokens = self.__preprocessor.tokenize_and_lemmatize(file_text)
             self.__heuristic_analysis(tokens)
             break
         #self.__print_files_for_double_check()
@@ -109,17 +109,6 @@ class AiriAnalyser:
         handler.read_in_excel_data(index_column=False)
         return handler.content
 
-    def __tokenize_with_nlp(self, text: str) -> list:
-        lemmas = []
-        preprocessed_text = self.__preprocess_text(text)
-        # max length for model 512 tokens
-        slices = slice_string(preprocessed_text, 512)
-        # tokenize and lemmanize
-        for seq in slices:
-            doc = self.__nlp(seq)
-            lemmas += [w.lemma_ for w in doc if not w.is_stop]
-        return lemmas
-
     def __heuristic_analysis(self, tokens: list):
         print(tokens)
         return
@@ -138,25 +127,11 @@ class AiriAnalyser:
                 break
         self.__add_new_extracted_data(word_frequencies)
 
-    def __preprocess_text(self, text: str) -> str:
-        # lower case
-        text = text.lower()
-        # Remove punctuation
-        text = re.sub(f"[{re.escape(punctuation)}]", "", text)
-        # Remove extra spaces, tabs, and new lines
-        text = " ".join(text.split())
-        return text
-
 # =========================================================================== #
 #  SECTION: Function definitions
 # =========================================================================== #
-def slice_string(text: str, chunk_length: int) -> list:
-    items = text.split(' ')
-    slices = []
-    while len(items) > chunk_length:
-        slices.append(' '.join(items[:chunk_length]))
-        items = items[chunk_length:]
-    return slices
+def compare_lists(list1 : list, list2: list) -> list:
+    return list(set(list1) - set(list2))
 
 # =========================================================================== #
 #  SECTION: Main Body
