@@ -4,7 +4,7 @@
 # @Author  : Liadan & Tom
 # @Python  : 3.8.6
 # @Link    : link
-# @Version : 0.0.1
+# @Version : 1.0.0
 """
 PDF reader to count specific keywords.
 """
@@ -30,21 +30,30 @@ ABSOLUTE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 # =========================================================================== #
 #  SECTION: Class definitions
 # =========================================================================== #
-class Analayser:
 
+class Analayser:
     def __init__(self, directory: str) -> None:
-        self.keywords: pd.DataFrame = self.read_keywords_from_file(os.path.join(ABSOLUTE_PATH, 'keywords.xlsx'))
-        self.header: list =  [col for col in self.keywords.columns if not "Unnamed" in col]
+        self.keywords: pd.DataFrame = self.read_keywords_from_file(os.path.join(ABSOLUTE_PATH, 'assets', 'keywords.xlsx'))
+        self.header: list = [col for col in self.keywords.columns if not "Unnamed" in col]
         self.files = glob.glob(directory)
         self.company = directory.split('\\')[-2]
+        self.word_countings: pd.DataFrame = self.__get_word_counting_dataframe()
         self.__extracted_data = pd.DataFrame(index=self.header)
         self.__suspicious_pages = list()
 
+
     def analyse_company_data(self):
+        """
+        start analysis for the company data:
+            - if the text from pdf is already extracted
+              the ressource is a txt file
+            - else extract the text from the pdf, write it to
+              a txt file and analyse it
+        """
         for i, file in enumerate(self.files):
             self.__progressBar(i, len(self.files))
             year = re.findall(r"[0-9]{4}", file)[-1]
-            file_text:str = ''
+            file_text: str = ''
             if self.__is_txt_existing(file):
                 file_text = self.__extract_text_from_txt(file)
             else:
@@ -56,8 +65,8 @@ class Analayser:
     def export_data_to_excel(self):
         df = self.__get_transposed_extracted_data()
         filename = f'output_{self.company}.xlsx'
-        path = os.path.join(ABSOLUTE_PATH, "extracted_data",
-                            "word_countings", filename)
+        path = os.path.join(ABSOLUTE_PATH, "ExtractedData",
+                            "HeuristicData", filename)
         df.to_excel(path, engine='xlsxwriter')
 
     def plot_extracted_data(self, debug=True):
@@ -97,7 +106,8 @@ class Analayser:
 
         if not debug:
             filename = f'output_{self.company}.png'
-            path = os.path.join(ABSOLUTE_PATH, "plots", filename)
+            path = os.path.join(
+                ABSOLUTE_PATH, "ExtractedData", "plots", filename)
             plt.savefig(path, dpi=250)
             plt.close()
         else:
@@ -110,6 +120,21 @@ class Analayser:
     def read_keywords_from_file(self, file:str)->pd.DataFrame:
         return pd.read_excel(file, header=0, engine='openpyxl')
 
+    def export_keyword_counting_to_excel(self):
+        filename = 'heuristic_analysis.xlsx'
+        path = os.path.join(ABSOLUTE_PATH, 
+                            "ExtractedData",
+                            "HeuristicData",
+                            "KeywordFrequency",
+                            filename)
+        if os.path.isfile(path):
+            df = pd.read_excel(
+                path, index_col=0, header=0, engine='openpyxl')
+            df = df.join(self.word_countings[self.company])
+        else:
+            df = self.word_countings
+        df.to_excel(path, engine='xlsxwriter')
+
     def __extract_data_from_text(self, text: str, year: str):
         word_frequencies = list()
         for col in self.keywords.columns:
@@ -117,7 +142,14 @@ class Analayser:
                 keywords_list = self.keywords[col].dropna().tolist()
                 temp_word_frequencies = list()
                 for elem in keywords_list:
-                    temp_word_frequencies.append(text.count(elem.lower()))
+                    if len(elem) > 3:
+                        word_frequency: int = text.count(elem.lower())
+                    else:
+                        word_frequency: int = sum(1 for _ in re.finditer(
+                            r'\b%s\b' % re.escape(elem.lower()), text.lower()))
+                    temp_word_frequencies.append(word_frequency)
+                    self.word_countings.loc[self.word_countings.keywords == elem,
+                                            self.company] += word_frequency
                 word_frequencies.append(sum(temp_word_frequencies))
             else:
                 break
@@ -129,16 +161,17 @@ class Analayser:
         with pdfplumber.open(file) as pdf:
             for i, page in enumerate(pdf.pages):
                 try:
-                    text += '\n'+page.extract_text().lower()
+                    text += '\n' + page.extract_text().lower()
                 except AttributeError:
                     self.__suspicious_pages.append((file, i))
         self.__save_extracted_text(file, text)
         return text
 
+
     def __extract_text_from_txt(self, file:str)->str:
         txt_file = file.split('\\')[-1].replace('pdf', 'txt')
         path = os.path.join(
-            ABSOLUTE_PATH, "extracted_data", "extracted_texts", self.company)
+            ABSOLUTE_PATH, "ExtractedData", "ExtractedTexts", self.company)
         with open(os.path.join(path, txt_file), "r", encoding="utf-8") as text_file:
             text = text_file.read()
         return text
@@ -156,7 +189,7 @@ class Analayser:
     def __save_extracted_text(self, file:str, text:str) -> None:
         new_file = file.split('\\')[-1].replace('pdf', 'txt')
         new_path = os.path.join(
-            ABSOLUTE_PATH, "extracted_data", "extracted_texts", self.company)
+            ABSOLUTE_PATH, "ExtractedData", "ExtractedTexts", self.company)
         try:
             os.makedirs(new_path)
         except FileExistsError:
@@ -168,7 +201,7 @@ class Analayser:
     def __is_txt_existing(self, file:str)->bool:
         txt_file = file.split('\\')[-1].replace('pdf', 'txt')
         path = os.path.join(
-            ABSOLUTE_PATH, "extracted_data", "extracted_texts", self.company)
+            ABSOLUTE_PATH, "ExtractedData", "ExtractedTexts", self.company)
         if os.path.isdir(path):
             return os.path.isfile(os.path.join(path, txt_file))
         return False
@@ -185,6 +218,18 @@ class Analayser:
         arrow = '-' * int(percent/100 * barLength - 1) + '>'
         spaces = ' ' * (barLength - len(arrow))
         print('Progress: [%s%s] %d %%' % (arrow, spaces, percent), end='\r')
+
+
+    def __get_word_counting_dataframe(self) -> pd.DataFrame:
+        keywords = []
+        for head in self.header:
+            keywords += self.keywords[head].tolist()
+        countings = [0 for i in range(len(keywords))]
+        keywords = [k for k in keywords if isinstance(k, str)]
+
+        return pd.DataFrame(list(zip(keywords, countings)),
+                            columns=['keywords', self.company])
+
 
 # =========================================================================== #
 #  SECTION: Function definitions
@@ -212,8 +257,8 @@ def timing(func):
 
 
 @timing
-def main(analyse_pdf = True):
-    for company in glob.glob("PDF-Data/*/"):
+def main(analyse_pdf=True):
+    for company in glob.glob("assets/PDF-Data/*/"):
         company_path = os.path.join(ABSOLUTE_PATH, company, "*")
         analyser = Analayser(company_path)
         print(f"\nStart checking: {analyser.company}\n")
@@ -221,10 +266,13 @@ def main(analyse_pdf = True):
             analyser.analyse_company_data()
         else:
             filename = f'output_{analyser.company}.xlsx'
-            path = os.path.join(ABSOLUTE_PATH, "extracted_data","word_countings", filename)
+            path = os.path.join(ABSOLUTE_PATH, "ExtractedData",
+                                "HeuristicData", filename)
             analyser.read_in_excel_data(path)
         analyser.export_data_to_excel()
         analyser.plot_extracted_data(debug=False)
+        analyser.export_keyword_counting_to_excel()
+
 
 # =========================================================================== #
 #  SECTION: Main Body
