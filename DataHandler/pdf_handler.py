@@ -33,6 +33,7 @@ class PdfHandler:
 
     def __init__(self, file_path: str):
         self.file_path: str = file_path
+        self.__encoded_file: str = file_path.encode('UTF-8')
         self.__content: str = None
         self.__decrypt_pdf_file(self.file_path)
 
@@ -48,21 +49,23 @@ class PdfHandler:
     # ----------------------------------------------------------------------- #
     def extract_data_with_pdf_plumber(self):
         self.__content = ''
-        with pdfplumber.open(self.file_path) as pdf:
+        with pdfplumber.open(self.__encoded_file) as pdf:
             for _, page in enumerate(pdf.pages):
                 try:
                     self.__content += '\n' + page.extract_text()
                 except TypeError or AttributeError:
+                    #TODO improve exeption handling
                     pass
 
     def extract_data_with_pypdf2(self):
         self.__content = ''
-        with open(self.file_path, mode='rb') as f:
+        with open(self.__encoded_file, mode='rb') as f:
             reader = PyPDF2.PdfFileReader(f)
             for _, page in enumerate(reader.pages):
                 try:
                     self.__content += '\n' + page.extractText()
-                except TypeError or AttributeError:
+                except Exception as e:
+                    #TODO improve exeption handling
                     pass
 
     def write_to_txt_file(self, directory: str):

@@ -1,0 +1,8 @@
+__pycache__/analyser.cpython-39.pyc
+__pycache__/main.cpython-39.pyc
+__pycache__/preprocessing.cpython-39.pyc
+__pycache__/terminal_dialog.cpython-39.pyc
+DataHandler/__pycache__/csv_handler.cpython-39.pyc
+DataHandler/__pycache__/excel_handler.cpython-39.pyc
+DataHandler/__pycache__/pdf_handler.cpython-39.pyc
+DataHandler/__pycache__/txt_handler.cpython-39.pyc

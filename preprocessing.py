@@ -15,13 +15,15 @@ import os
 import spacy
 import re
 from string import punctuation
-
 from DataHandler.csv_handler import CsvHandler
-from main import ABSOLUTE_PATH
+
 
 # =========================================================================== #
 #  SECTION: Global definitions
 # =========================================================================== #
+ABSOLUTE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+
+
 # =========================================================================== #
 #  SECTION: Class definitions
 # =========================================================================== #
@@ -58,15 +60,17 @@ class NlpPreprocessor:
         for seq in slices:
             doc = self.__nlp(seq)
             lemmas += [w.lemma_ for w in doc if not w.is_stop]
+        self.content = lemmas
         return lemmas
     
-    def save_tokens(self, tokens: list):
+    def save_tokens(self, subdirectory: str=None):
         token_path = os.path.join(ABSOLUTE_PATH,
                                   "ExtractedData",
                                   "ExtractedTokens",
+                                  subdirectory,
                                   f"token_{self.__company}_{self.__current_year}.csv")
         handler = CsvHandler(token_path)
-        handler.save_content(tokens)
+        handler.save_content(self.contenttokens)
 
     def read_tokens(self) -> list:
         token_path = os.path.join(ABSOLUTE_PATH,

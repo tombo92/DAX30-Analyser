@@ -12,12 +12,14 @@ Short Introduction
 #  SECTION: Imports
 # =========================================================================== #
 import os
-from main import ABSOLUTE_PATH
 
 
 # =========================================================================== #
 #  SECTION: Global definitions
 # =========================================================================== #
+ABSOLUTE_PATH = os.path.dirname(os.path.abspath('main.py'))
+
+
 # =========================================================================== #
 #  SECTION: Class definitions
 # =========================================================================== #
@@ -45,7 +47,7 @@ class TxtHandler:
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Public Methods
     # ----------------------------------------------------------------------- #
-    def extract_data(self, directory: str = ''):
+    def read_data(self, directory: str = ''):
         path = os.path.join(
             ABSOLUTE_PATH, "ExtractedData", "ExtractedTexts", directory)
         with open(os.path.join(path, self.file_path), "r", encoding="utf-8") as text_file:

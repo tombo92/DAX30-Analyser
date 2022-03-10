@@ -19,12 +19,13 @@ import pandas as pd
 from DataHandler.excel_handler import ExcelHandler
 from DataHandler.pdf_handler import PdfHandler
 from DataHandler.txt_handler import TxtHandler
-from main import ABSOLUTE_PATH
 from preprocessing import NlpPreprocessor
 
 # =========================================================================== #
 #  SECTION: Global definitions
 # =========================================================================== #
+ABSOLUTE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+
 
 # =========================================================================== #
 #  SECTION: Class definitions
@@ -34,13 +35,13 @@ class AiriAnalyser:
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Constructor
     # ----------------------------------------------------------------------- #
-    def __init__(self, read_pdf: bool):
+    def __init__(self):
         self.__keywords: pd.DataFrame = self.__read_in_keywords(
             os.path.join(ABSOLUTE_PATH, 'assets', 'keywords.xlsx'))
         self.__header: list = [
             col for col in self.__keywords.columns if "Unnamed" not in col]
         self.__extracted_data: pd.DataFrame = pd.DataFrame(index=self.__header)
-        self.__read_pdf: bool = read_pdf
+        self.__read_pdf: bool = None
         self.__files: str = None
         self.__company: str = None
         self.__word_countings: pd.DataFrame = None
@@ -50,35 +51,46 @@ class AiriAnalyser:
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Getter/Setter
     # ----------------------------------------------------------------------- #
+    @property
+    def company(self):
+        return self.__company
 
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Public Methods
     # ----------------------------------------------------------------------- #
-    def extract_company_data(self, directory: str):
+    def extract_company_data(self, directory: str, read_pdf: bool=False):
         self.__files: list = glob.glob(directory)
         self.__company: str = directory.split('\\')[-2]
         self.__word_countings: pd.DataFrame = self.__get_word_counting_dataframe()
+        self.__read_pdf: bool = read_pdf
 
-    def analyse_company_data(self):
-        """
-        start analysis for the company data:
-            - if the text from pdf is already extracted
-              the ressource is a txt file
-            - else extract the text from the pdf, write it to
-              a txt file and analyse it
-        """
+    def analyse_company_data(self, method, *args):
         for file in self.__files:
             self.__current_year = re.findall(r"[0-9]{4}", file)[-1]
-            file_text: str = ''
-            if self.__read_pdf:
-                file_text = self.__extract_text_from_pdf(file)
-            else:
-                file_text = self.__extract_text_from_txt(file)
-            tokens = self.__preprocessor.tokenize_and_lemmatize(file_text)
-            self.__heuristic_analysis(tokens)
-            break
-        #self.__print_files_for_double_check()
+            method(file, *args)
 
+    def extract_text_from_pdf(self, file: str, pdf_plumber: bool = True) -> str:
+        handler = PdfHandler(file)
+        if pdf_plumber:
+            handler.extract_data_with_pdf_plumber()
+            handler.write_to_txt_file(os.path.join('pdfplumber', self.__company))
+        else:
+            handler.extract_data_with_pypdf2()
+            handler.write_to_txt_file(os.path.join('pypdf2', self.__company))
+        return handler.content
+    
+    def tokenize(self, file: str, pdf_plumber: bool = True):
+        directory = 'pypdf2'
+        if pdf_plumber:
+            directory = 'pdfplumber'
+        _, file_name = os.path.split(file)
+        handler = TxtHandler(file_name)
+        raw_text = handler.read_data(os.path.join(
+            directory, self.company))
+        self.__preprocessor.tokenize_and_lemmatize(raw_text)
+        self.__preprocessor.save_tokens(directory)
+        
+            
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Private Methods
     # ----------------------------------------------------------------------- #
@@ -98,15 +110,9 @@ class AiriAnalyser:
         handler.extract_data(self.__company)
         return handler.content
 
-    def __extract_text_from_pdf(self, file: str) -> str:
-        handler = PdfHandler(file)
-        handler.extract_data_with_pdf_plumber()
-        handler.write_to_txt_file(self.__company)
-        return handler.content
-
     def __read_in_keywords(self, file: str) -> pd.DataFrame:
         handler = ExcelHandler(file)
-        handler.read_in_excel_data(index_column=False)
+        handler.read_data(index_column=False)
         return handler.content
 
     def __heuristic_analysis(self, tokens: list):
@@ -137,10 +143,11 @@ def compare_lists(list1 : list, list2: list) -> list:
 #  SECTION: Main Body
 # =========================================================================== #
 if __name__ == '__main__':
-    for company in glob.glob("assets/PDF-Data/*/"):
+    pass
+    """for company in glob.glob("assets/PDF-Data/*/"):
         company_path = os.path.join(ABSOLUTE_PATH, company, "*")
         analyser = AiriAnalyser(False)
         analyser.extract_company_data(company_path)
         analyser.analyse_company_data()
 
-        break
+        break"""

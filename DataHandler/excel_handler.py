@@ -13,12 +13,14 @@ Excel file handler
 # =========================================================================== #
 import os
 import pandas as pd
-from main import ABSOLUTE_PATH
 
 
 # =========================================================================== #
 #  SECTION: Global definitions
 # =========================================================================== #
+ABSOLUTE_PATH = os.path.dirname(os.path.abspath('main.py'))
+
+
 # =========================================================================== #
 #  SECTION: Class definitions
 # =========================================================================== #
@@ -56,7 +58,7 @@ class ExcelHandler:
             pass
         self.content.to_excel(new_path, engine="xlsxwriter")
 
-    def read_in_excel_data(self, index_column: bool = True):
+    def read_data(self, index_column: bool = True):
         if index_column:
             self.content = pd.read_excel(
                 self.file_path, index_col=0, header=0, engine='openpyxl')

@@ -11,7 +11,6 @@ csv file handler
 # =========================================================================== #
 #  SECTION: Imports
 # =========================================================================== #
-import os
 import csv
 
 # =========================================================================== #
@@ -49,7 +48,7 @@ class CsvHandler:
             writer = csv.writer(csv_file)
             writer.writerow(self.content)
 
-    def read_in_csv_data(self):
+    def read_data(self):
         with open(self.file_path, 'r', encoding="UTF8") as csv_file:
             self.__content = csv.reader(csv_file)
     # ----------------------------------------------------------------------- #

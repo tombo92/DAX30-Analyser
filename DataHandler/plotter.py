@@ -12,7 +12,6 @@ data plotter
 #  SECTION: Imports
 # =========================================================================== #
 import os
-from main import ABSOLUTE_PATH
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -20,6 +19,9 @@ import pandas as pd
 # =========================================================================== #
 #  SECTION: Global definitions
 # =========================================================================== #
+ABSOLUTE_PATH = os.path.dirname(os.path.abspath('main.py'))
+
+
 # =========================================================================== #
 #  SECTION: Class definitions
 # =========================================================================== #
