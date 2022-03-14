@@ -46,11 +46,11 @@ class Application:
             '3': ['Data Plotting', 'Plot the previously extracted heuristic data.']
         }
         self.__options2: dict = {
-            '1': ['Read PDF (pdfplumber)', "Read in the pdf data with the 'pdfplumber'-library and save as txt-file."],
-            '2': ['Read PDF (PyPDF2)', "Read in the pdf data with the 'PyPDF2'-library and save as txt-file."],
-            '3': ['Tokenize With NLP', 'Read in the previously extracted texts and lemmatize & tokenize them and save as csv-file.'],
-            '4': ['Compare pdfpumber and PyPDF2', 'Read in the previously extracted tokens of both extracted texsts and compare them.'],
-            
+            '1': ['Read PDF (pdfplumber)', "Read in the pdf data with the 'pdfplumber'-library and save as txt-file. (~8h)"],
+            '2': ['Read PDF (PyPDF2)', "Read in the pdf data with the 'PyPDF2'-library and save as txt-file. (~6min)"],
+            '3': ['Tokenize With NLP (spacy)', 'Read in the previously extracted texts and lemmatize & tokenize them with spacy and save as csv-file. (~22h)'],
+            '4': ['Tokenize With NLP (nltk)', 'Read in the previously extracted texts and lemmatize & tokenize them with nltk and save as csv-file. (~22h)'],
+            '5': ['Compare tectnologies', 'Read in the previously extracted tokens of both extracted texsts and compare them.']    
         }
         self.__options3: dict = {
             '1': ['Start Analysis', 'Perform a heuristic analysis with the given keywords and the previously created tokens.']
@@ -62,6 +62,9 @@ class Application:
                                 self.__options2,
                                 self.__options3,
                                 self.__options4]
+        self.preprocessors: str = {3: 'spacy', 4: 'nltk'}
+        self.analyser = AiriAnalyser()
+        self.durations: list = []
 
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Getter/Setter
@@ -96,9 +99,9 @@ class Application:
                 level = int(user_input)
             if level > 0 and not is_start_dialog:
                 print('\n' + self.__seperator)
-                self.__execute_program(memory, level)
+                self.__second_level_dialog(memory, level)
                 print(self.__seperator)
-                print("Finished...\n")
+                print(f"Finished after {time.strftime('%H:%M:%S', time.gmtime(sum(self.durations)))}\n")
                 level = 0
             memory = level
 
@@ -142,46 +145,71 @@ class Application:
             else:
                 print("Invalid input. Please enter 'y'/'yes' or 'n'/'no'.")
 
-    def __execute_program(self, first_value: int, second_value: int):
-        analyser = AiriAnalyser()
-        durations = []
+    def __second_level_dialog(self, first_value: int, second_value: int):
+        # TODO: make modular and check if previous steps are fulfilled
         method: function = None
+        kwargs: dict = {}
         if first_value == 1:
+            print(f"{self.__options2[str(second_value)][0]}...")
             if second_value == 1:
-                print(f"{self.__options2['1'][0]}...")
-                method: function = analyser.extract_text_from_pdf
-                args = True
+                method: function = self.analyser.extract_text_from_pdf
+                self.analyser.extractor = 'pdfplumber'
             elif second_value == 2:
-                print(f"{self.__options2['2'][0]}...")
-                method: function = analyser.extract_text_from_pdf
-                args = False
-            elif second_value == 3:
-                print(f"{self.__options2['3'][0]}...")
-                while True:
-                    user_input = input("Choose between pdfplumber [1] or PyPDF2 [2]: ")
-                    if self.__is_input_valid(user_input, ['1', '2']):
-                        break
-                if user_input == '1':
-                    method: function = analyser.tokenize
-                    args = True
-                elif user_input == '2':
-                    method: function = analyser.tokenize
-                    args = False
+                method: function = self.analyser.extract_text_from_pdf
+                self.analyser.extractor = 'pypdf2'
+            elif second_value in [3, 4]:
+                self.analyser.extractor = self.__choose_extractor()
+                self.analyser.preprocessor = self.preprocessors[second_value]
+                method: function = self.analyser.tokenize
+        elif first_value == 2:
+            print(f"{self.__options3['1'][0]}...")
+            method: function = self.analyser.analyse_keyword_occurences
+            self.analyser.extractor = self.__choose_extractor()
+            self.analyser.preprocessor = self.__choose_preprocessor()
+        elif first_value == 3:
+            print(f"{self.__options4['1'][0]}...")
+            method: function = self.analyser.create_plots
+            self.analyser.extractor = self.__choose_extractor()
+            self.analyser.preprocessor = self.__choose_preprocessor()
         if method == None:
             print('Need to be implemented, please choose other option :)')
             return
+        self.__execute_program(method, kwargs)
+        
+    def __execute_program(self, method, args):
         for i, company in enumerate(COMPANIES):
             start = time.time()
             progressBar(i, len(COMPANIES), 
-                        duration=estimate_time(durations, len(COMPANIES)-i))
+                        duration=estimate_time(self.durations, len(COMPANIES)-i))
             company_path = os.path.join(ABSOLUTE_PATH, company, "*")
-            analyser.extract_company_data(company_path)
-            analyser.analyse_company_data(method, args)
+            self.analyser.extract_company_data(company_path)
+            self.analyser.analyse_company_data(method, args)
             end = time.time()
-            durations.append(int(end-start))
+            self.durations.append(int(end-start))
         progressBar(len(COMPANIES), len(COMPANIES),
-                    duration=estimate_time(durations, 0))
+                    duration=estimate_time(self.durations, 0))
 
+    def __choose_extractor(self) -> str:
+        while True:
+            user_input = input(
+                "Choose between pdfplumber [1] or PyPDF2 [2] tokens: ")
+            if self.__is_input_valid(user_input, ['1', '2']):
+                break
+        if user_input == '1':
+            return 'pdfplumber'
+        if user_input == '2': 
+            return 'pypdf2'
+    
+    def __choose_preprocessor(self) -> str:
+        while True:
+            user_input = input(
+                "Choose between spacy [1] or nltk [2] tokens: ")
+            if self.__is_input_valid(user_input, ['1', '2']):
+                break
+        if user_input == '1':
+            return 'spacy'
+        if user_input == '2':
+            return 'nltk'
 
 # =========================================================================== #
 #  SECTION: Function definitions

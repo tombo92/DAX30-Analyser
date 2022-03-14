@@ -30,8 +30,8 @@ class ExcelHandler:
     #  SUBSECTION: Constructor
     # ----------------------------------------------------------------------- #
 
-    def __init__(self, file_path: str):
-        self.file_path: str = file_path
+    def __init__(self, file_path: str= None):
+        self.__file_path: str = file_path
         self.__content: pd.DataFrame = None
 
     # ----------------------------------------------------------------------- #
@@ -44,27 +44,39 @@ class ExcelHandler:
     @content.setter
     def content(self, value: pd.DataFrame):
         self.__content = value
+    
+    @property
+    def path(self):
+        return self.__file_path
+
+    @path.setter
+    def path(self, value: str):
+        self.__file_path = os.path.join(
+            ABSOLUTE_PATH, "ExtractedData", "HeuristicData", value)
 
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Public Methods
     # ----------------------------------------------------------------------- #
-    def save_content(self, new_file_path: str):
-        new_path = os.path.join(
-            ABSOLUTE_PATH, "ExtractedData", "HeuristicData", new_file_path)
+    def save_content(self):
         try:
-            os.makedirs(new_path)
+            path = os.path.join(
+                ABSOLUTE_PATH, 
+                "ExtractedData", 
+                "HeuristicData", 
+                "KeywordFrequency")
+            os.makedirs(path)
         except FileExistsError:
             # directory already exists
             pass
-        self.content.to_excel(new_path, engine="xlsxwriter")
+        self.content.to_excel(self.__file_path, engine="xlsxwriter")
 
     def read_data(self, index_column: bool = True):
         if index_column:
             self.content = pd.read_excel(
-                self.file_path, index_col=0, header=0, engine='openpyxl')
+                self.__file_path, index_col=0, header=0, engine='openpyxl')
         else:
             self.content = pd.read_excel(
-                self.file_path, header=0, engine='openpyxl')
+                self.__file_path, header=0, engine='openpyxl')
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Private Methods
     # ----------------------------------------------------------------------- #

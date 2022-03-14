@@ -13,6 +13,7 @@ csv file handler
 # =========================================================================== #
 import csv
 import os
+import sys
 
 # =========================================================================== #
 #  SECTION: Global definitions
@@ -29,6 +30,7 @@ class CsvHandler:
     def __init__(self, file_path: str, content: list = None):
         self.file_path: str = file_path
         self.__content: list = content
+        
 
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Getter/Setter
@@ -57,7 +59,7 @@ class CsvHandler:
 
     def read_data(self):
         with open(self.file_path, 'r', encoding="UTF8") as csv_file:
-            self.__content = list(csv.reader(csv_file))
+            self.__content = sum(list(csv.reader(csv_file)), [])
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Private Methods
     # ----------------------------------------------------------------------- #
@@ -66,7 +68,15 @@ class CsvHandler:
 # =========================================================================== #
 #  SECTION: Function definitions
 # =========================================================================== #
-
+maxInt = sys.maxsize
+while True:
+    # decrease the maxInt value by factor 10
+    # as long as the OverflowError occurs.
+    try:
+        csv.field_size_limit(maxInt)
+        break
+    except OverflowError:
+        maxInt = int(maxInt/10)
 
 # =========================================================================== #
 #  SECTION: Main Body

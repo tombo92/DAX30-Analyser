@@ -32,7 +32,6 @@ class Plotter:
     # ----------------------------------------------------------------------- #
 
     def __init__(self, colormap: str, title: str, data: dict, labels: dict):
-        super().__init__()
         self.colormap: str = colormap
         self.title: str = title
         self.data: dict = data

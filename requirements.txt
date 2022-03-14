@@ -6,3 +6,4 @@ openpyxl
 pikepdf
 spacy
 pypdf2
+nltk
