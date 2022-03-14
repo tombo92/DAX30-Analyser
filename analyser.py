@@ -14,6 +14,7 @@ airi data analyser
 import glob
 import os
 import re
+from typing import Callable
 
 import pandas as pd
 from DataHandler.excel_handler import ExcelHandler
@@ -55,15 +56,15 @@ class AiriAnalyser:
     @property
     def company(self):
         return self.__company
-    
+
     @property
     def extractor(self):
         return self.__pdf_extractor
-    
+
     @extractor.setter
     def extractor(self, value:str):
         self.__pdf_extractor = value
-    
+
     @property
     def preprocessor(self):
         return self.__preprocessor
@@ -83,13 +84,13 @@ class AiriAnalyser:
         self.__company: str = directory.split('\\')[-2]
         self.__word_countings: pd.DataFrame = self.__get_word_counting_dataframe()
 
-    def analyse_company_data(self, method, kwargs: dict):
+    def analyse_company_data(self, method: Callable, kwargs: dict):
         for file in self.__files:
             self.__current_year = re.findall(r"[0-9]{4}", file)[-1]
             kwargs['file'] = file
             method(**kwargs)
         if not self.__extracted_data.empty:
-            self.__export_heuristic_data() 
+            self.__export_heuristic_data()
 
     def extract_text_from_pdf(self, file: str) -> str:
         handler = PdfHandler(file)
@@ -100,23 +101,26 @@ class AiriAnalyser:
         handler.write_to_txt_file(os.path.join(
             self.__pdf_extractor, self.__company))
         return handler.content
-    
+
     def tokenize(self, file: str):
         _, file_name = os.path.split(file)
         handler = TxtHandler(file_name.replace('pdf', 'txt'))
         handler.read_data(os.path.join(self.__pdf_extractor, self.company))
         self.__preprocessor.tokenize_and_lemmatize(handler.content)
         self.__preprocessor.save_tokens(self.__company, self.__current_year, self.extractor)
-        
+
     def analyse_keyword_occurences(self, file: str):
         tokens: list = self.__preprocessor.read_tokens(
             self.__company, self.__current_year, self.extractor)
         self.__heuristic_analysis(tokens)
-    
-    def create_plots(self):
-        # get data dict('single':..., 'total':...)
-        data: dict = None
-        
+
+    def create_plots(self, file: str):
+        df: pd.DataFrame = self.__read_heuristic_data()
+        annual_sum_up: pd.DataFrame = df.sum(axis=1).reset_index()
+        annual_sum_up.rename({0: "sum"}, inplace=True, axis=1)
+        data: dict = {'single': df,
+                      'total': annual_sum_up}
+
         labels = {
             "x_label": "year",
             "y_bar_label": 'occurence',
@@ -128,11 +132,11 @@ class AiriAnalyser:
                           labels=labels)
         plotter.plot_bar_chart_with_sum_up()
         plotter.save_figure(file_name=f'output_{self.company}.png')
-    
+
     def compare_technologies(self):
         #TODO has to be implemented
-        pass        
-            
+        pass
+
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Private Methods
     # ----------------------------------------------------------------------- #
@@ -150,7 +154,7 @@ class AiriAnalyser:
         handler = ExcelHandler(file)
         handler.read_data(index_column=False)
         return handler.content
-    
+
     def __add_new_extracted_data(self, new_data: list) -> None:
         self.__extracted_data[self.__current_year] = pd.Series(new_data, index=self.__header)
 
@@ -169,7 +173,7 @@ class AiriAnalyser:
             else:
                 break
         self.__add_new_extracted_data(word_frequencies)
-        
+
     def __export_heuristic_data(self):
         handler = ExcelHandler()
         # export company data
@@ -185,7 +189,13 @@ class AiriAnalyser:
         else:
             handler.content = self.__word_countings
         handler.save_content()
-        
+
+    def __read_heuristic_data(self) -> pd.DataFrame:
+        handler = ExcelHandler()
+        handler.path = f'output_{self.__company}.xlsx'
+        handler.read_data(index_column=True)
+        return handler.content
+
 # =========================================================================== #
 #  SECTION: Function definitions
 # =========================================================================== #
@@ -197,4 +207,4 @@ def compare_lists(list1 : list, list2: list) -> list:
 # =========================================================================== #
 if __name__ == '__main__':
     pass
-    
+

@@ -14,6 +14,7 @@ main terminal outputs and interaction
 import time
 import glob
 import os
+from typing import Callable
 from analyser import AiriAnalyser
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning) # NLP is crying about mising cuda
@@ -30,7 +31,9 @@ ABSOLUTE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 #  SECTION: Class definitions
 # =========================================================================== #
 class Application:
-
+    """
+    GUI-class for the AI Readiness Index analysis
+    """
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Constructor
     # ----------------------------------------------------------------------- #
@@ -50,7 +53,7 @@ class Application:
             '2': ['Read PDF (PyPDF2)', "Read in the pdf data with the 'PyPDF2'-library and save as txt-file. (~6min)"],
             '3': ['Tokenize With NLP (spacy)', 'Read in the previously extracted texts and lemmatize & tokenize them with spacy and save as csv-file. (~22h)'],
             '4': ['Tokenize With NLP (nltk)', 'Read in the previously extracted texts and lemmatize & tokenize them with nltk and save as csv-file. (~22h)'],
-            '5': ['Compare tectnologies', 'Read in the previously extracted tokens of both extracted texsts and compare them.']    
+            '5': ['Compare tectnologies', 'Read in the previously extracted tokens of both extracted texsts and compare them.']
         }
         self.__options3: dict = {
             '1': ['Start Analysis', 'Perform a heuristic analysis with the given keywords and the previously created tokens.']
@@ -147,45 +150,46 @@ class Application:
 
     def __second_level_dialog(self, first_value: int, second_value: int):
         # TODO: make modular and check if previous steps are fulfilled
-        method: function = None
+        method: Callable = None
         kwargs: dict = {}
         if first_value == 1:
             print(f"{self.__options2[str(second_value)][0]}...")
             if second_value == 1:
-                method: function = self.analyser.extract_text_from_pdf
+                method: Callable = self.analyser.extract_text_from_pdf
                 self.analyser.extractor = 'pdfplumber'
             elif second_value == 2:
-                method: function = self.analyser.extract_text_from_pdf
+                method: Callable = self.analyser.extract_text_from_pdf
                 self.analyser.extractor = 'pypdf2'
             elif second_value in [3, 4]:
                 self.analyser.extractor = self.__choose_extractor()
                 self.analyser.preprocessor = self.preprocessors[second_value]
-                method: function = self.analyser.tokenize
+                method: Callable = self.analyser.tokenize
         elif first_value == 2:
             print(f"{self.__options3['1'][0]}...")
-            method: function = self.analyser.analyse_keyword_occurences
+            method: Callable = self.analyser.analyse_keyword_occurences
             self.analyser.extractor = self.__choose_extractor()
             self.analyser.preprocessor = self.__choose_preprocessor()
         elif first_value == 3:
             print(f"{self.__options4['1'][0]}...")
-            method: function = self.analyser.create_plots
+            method: Callable = self.analyser.create_plots
             self.analyser.extractor = self.__choose_extractor()
             self.analyser.preprocessor = self.__choose_preprocessor()
-        if method == None:
+        if method is None:
             print('Need to be implemented, please choose other option :)')
             return
         self.__execute_program(method, kwargs)
-        
+
     def __execute_program(self, method, args):
         for i, company in enumerate(COMPANIES):
             start = time.time()
-            progressBar(i, len(COMPANIES), 
+            progressBar(i, len(COMPANIES),
                         duration=estimate_time(self.durations, len(COMPANIES)-i))
             company_path = os.path.join(ABSOLUTE_PATH, company, "*")
             self.analyser.extract_company_data(company_path)
             self.analyser.analyse_company_data(method, args)
             end = time.time()
             self.durations.append(int(end-start))
+            break
         progressBar(len(COMPANIES), len(COMPANIES),
                     duration=estimate_time(self.durations, 0))
 
@@ -197,9 +201,9 @@ class Application:
                 break
         if user_input == '1':
             return 'pdfplumber'
-        if user_input == '2': 
+        if user_input == '2':
             return 'pypdf2'
-    
+
     def __choose_preprocessor(self) -> str:
         while True:
             user_input = input(
@@ -211,6 +215,7 @@ class Application:
         if user_input == '2':
             return 'nltk'
 
+
 # =========================================================================== #
 #  SECTION: Function definitions
 # =========================================================================== #
@@ -221,11 +226,13 @@ def progressBar(current, total, barLength=20, duration: str = 'unknown'):
     print('Progress: [%s%s] %d %%\tEstimated Excution Time: %s' %
           (arrow, spaces, percent, duration), end='\r')
 
+
 def estimate_time(durations: list, number_of_iterations_left: int) -> str:
     if durations:
         left_duration = int(sum(durations)/len(durations) * number_of_iterations_left)
         return time.strftime('%H:%M:%S', time.gmtime(left_duration))
     return 'unknown'
+
 
 def main():
     app = Application()

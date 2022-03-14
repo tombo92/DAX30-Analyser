@@ -14,6 +14,7 @@ data plotter
 import os
 import matplotlib.pyplot as plt
 import pandas as pd
+from scipy.misc import face
 
 
 # =========================================================================== #
@@ -26,6 +27,9 @@ ABSOLUTE_PATH = os.path.dirname(os.path.abspath('main.py'))
 #  SECTION: Class definitions
 # =========================================================================== #
 class Plotter:
+    """
+    Class to create plots out of pd.Dataframes
+    """
 
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Constructor
@@ -56,15 +60,27 @@ class Plotter:
                                axis=ax)
 
         # Create empty plot with blank marker containing the extra label
-        ax.plot([], [], color=self.line_color, label="line")
-        ax.legend(loc='upper left')
+        ax.plot([], [], color=self.line_color, label="in total")
+
+        # Shrink current axis's height by 20% on the bottom
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0 + box.height * 0.2,
+                         box.width, box.height * 0.8])
+        ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.175),
+                  fancybox=True, shadow=True, ncol=5)
+
 
     def show(self):
         plt.show()
 
     def save_figure(self, file_name: str):
-        path = os.path.join(ABSOLUTE_PATH, "ExtractedData", "plots", file_name)
-        plt.savefig(path, dpi=250)
+        path = os.path.join(ABSOLUTE_PATH, "ExtractedData", "plots")
+        try:
+            os.makedirs(path)
+        except FileExistsError:
+            # directory already exists
+            pass
+        plt.savefig(os.path.join(path, file_name), dpi=250)
         plt.close()
 
     # ----------------------------------------------------------------------- #
