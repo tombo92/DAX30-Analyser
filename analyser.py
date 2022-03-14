@@ -84,11 +84,10 @@ class AiriAnalyser:
         if pdf_plumber:
             directory = 'pdfplumber'
         _, file_name = os.path.split(file)
-        handler = TxtHandler(file_name)
-        raw_text = handler.read_data(os.path.join(
-            directory, self.company))
-        self.__preprocessor.tokenize_and_lemmatize(raw_text)
-        self.__preprocessor.save_tokens(directory)
+        handler = TxtHandler(file_name.replace('pdf', 'txt'))
+        handler.read_data(os.path.join(directory, self.company))
+        self.__preprocessor.tokenize_and_lemmatize(handler.content)
+        self.__preprocessor.save_tokens(self.__company, self.__current_year, directory)
         
             
     # ----------------------------------------------------------------------- #
@@ -144,10 +143,4 @@ def compare_lists(list1 : list, list2: list) -> list:
 # =========================================================================== #
 if __name__ == '__main__':
     pass
-    """for company in glob.glob("assets/PDF-Data/*/"):
-        company_path = os.path.join(ABSOLUTE_PATH, company, "*")
-        analyser = AiriAnalyser(False)
-        analyser.extract_company_data(company_path)
-        analyser.analyse_company_data()
-
-        break"""
+    

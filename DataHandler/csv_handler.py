@@ -12,6 +12,7 @@ csv file handler
 #  SECTION: Imports
 # =========================================================================== #
 import csv
+import os
 
 # =========================================================================== #
 #  SECTION: Global definitions
@@ -25,9 +26,9 @@ class CsvHandler:
     #  SUBSECTION: Constructor
     # ----------------------------------------------------------------------- #
 
-    def __init__(self, file_path: str):
+    def __init__(self, file_path: str, content: list = None):
         self.file_path: str = file_path
-        self.__content: list = None
+        self.__content: list = content
 
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Getter/Setter
@@ -44,13 +45,19 @@ class CsvHandler:
     #  SUBSECTION: Public Methods
     # ----------------------------------------------------------------------- #
     def save_content(self):
+        path, _ = os.path.split(self.file_path)
+        try:
+            os.makedirs(path)
+        except FileExistsError:
+            # directory already exists
+            pass
         with open(self.file_path, 'w', encoding="UTF8") as csv_file:
             writer = csv.writer(csv_file)
             writer.writerow(self.content)
 
     def read_data(self):
         with open(self.file_path, 'r', encoding="UTF8") as csv_file:
-            self.__content = csv.reader(csv_file)
+            self.__content = list(csv.reader(csv_file))
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Private Methods
     # ----------------------------------------------------------------------- #

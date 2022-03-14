@@ -63,14 +63,14 @@ class NlpPreprocessor:
         self.content = lemmas
         return lemmas
     
-    def save_tokens(self, subdirectory: str=None):
+    def save_tokens(self, company: str, year: str, subdirectory: str = None):
         token_path = os.path.join(ABSOLUTE_PATH,
                                   "ExtractedData",
                                   "ExtractedTokens",
                                   subdirectory,
-                                  f"token_{self.__company}_{self.__current_year}.csv")
-        handler = CsvHandler(token_path)
-        handler.save_content(self.contenttokens)
+                                  f"token_{company}_{year}.csv")
+        handler = CsvHandler(token_path, self.content)
+        handler.save_content()
 
     def read_tokens(self) -> list:
         token_path = os.path.join(ABSOLUTE_PATH,

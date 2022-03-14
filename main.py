@@ -15,6 +15,8 @@ import time
 import glob
 import os
 from analyser import AiriAnalyser
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning) # NLP is crying about mising cuda
 
 
 # =========================================================================== #
