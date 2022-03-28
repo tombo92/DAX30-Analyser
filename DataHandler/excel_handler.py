@@ -30,7 +30,7 @@ class ExcelHandler:
     #  SUBSECTION: Constructor
     # ----------------------------------------------------------------------- #
 
-    def __init__(self, file_path: str= None):
+    def __init__(self, file_path: str = None):
         self.__file_path: str = file_path
         self.__content: pd.DataFrame = None
 
@@ -44,7 +44,7 @@ class ExcelHandler:
     @content.setter
     def content(self, value: pd.DataFrame):
         self.__content = value
-    
+
     @property
     def path(self):
         return self.__file_path
@@ -57,18 +57,17 @@ class ExcelHandler:
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Public Methods
     # ----------------------------------------------------------------------- #
-    def save_content(self):
+    def save_content(self, sheet: str = 'Sheet1'):
+        writer = pd.ExcelWriter(self.__file_path, engine="xlsxwriter")
         try:
-            path = os.path.join(
-                ABSOLUTE_PATH, 
-                "ExtractedData", 
-                "HeuristicData", 
-                "KeywordFrequency")
-            os.makedirs(path)
+            os.makedirs(os.path.dirname(self.__file_path))
         except FileExistsError:
             # directory already exists
             pass
-        self.content.to_excel(self.__file_path, engine="xlsxwriter")
+        self.content.to_excel(writer, sheet_name=sheet)
+        self._auto_adjust_column_width(writer, sheet)
+        writer.save()
+        writer.close()
 
     def read_data(self, index_column: bool = True):
         if index_column:
@@ -77,10 +76,16 @@ class ExcelHandler:
         else:
             self.content = pd.read_excel(
                 self.__file_path, header=0, engine='openpyxl')
+
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Private Methods
     # ----------------------------------------------------------------------- #
-
+    def _auto_adjust_column_width(self, writer: pd.ExcelWriter, sheet: str):
+        for column in self.content:
+            column_width = max(self.content[column].astype(
+                str).map(len).max(), len(column))
+            col_idx = self.content.columns.get_loc(column)
+            writer.sheets[sheet].set_column(col_idx, col_idx, column_width)
 
 # =========================================================================== #
 #  SECTION: Function definitions

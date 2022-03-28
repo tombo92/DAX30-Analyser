@@ -6,3 +6,4 @@ DataHandler/__pycache__/csv_handler.cpython-39.pyc
 DataHandler/__pycache__/excel_handler.cpython-39.pyc
 DataHandler/__pycache__/pdf_handler.cpython-39.pyc
 DataHandler/__pycache__/txt_handler.cpython-39.pyc
+DataHandler/__pycache__/plotter.cpython-39.pyc

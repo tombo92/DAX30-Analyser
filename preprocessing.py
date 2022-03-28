@@ -35,8 +35,8 @@ ABSOLUTE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 #  SECTION: Class definitions
 # =========================================================================== #
 class Preprocessor(ABC):
-    
-    
+
+
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Constructor
     # ----------------------------------------------------------------------- #
@@ -51,36 +51,42 @@ class Preprocessor(ABC):
     def content(self):
         return self._content
 
+    @property
+    def processor_type(self):
+        return self._suffix
+
     @content.setter
     def content(self, value: list):
         self._content = value
-    
+
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Public Methods
     # ----------------------------------------------------------------------- #
     @abstractmethod
     def tokenize_and_lemmatize(self, text: str) -> list:
         pass
-    
+
     def save_tokens(self, company: str, year: str, subdirectory: str = None):
         token_path = os.path.join(ABSOLUTE_PATH,
                                   "ExtractedData",
                                   "ExtractedTokens",
                                   subdirectory,
+                                  self._suffix,
                                   f"token_{self._suffix}_{company}_{year}.csv")
         handler = CsvHandler(token_path, self.content)
         handler.save_content()
-    
+
     def read_tokens(self, company: str, year: str, subdirectory: str = None) -> list:
         token_path = os.path.join(ABSOLUTE_PATH,
                                   "ExtractedData",
                                   "ExtractedTokens",
                                   subdirectory,
+                                  self._suffix,
                                   f"token_{self._suffix}_{company}_{year}.csv")
         handler = CsvHandler(token_path)
         handler.read_data()
         return handler.content
-    
+
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Private Methods
     # ----------------------------------------------------------------------- #
@@ -92,8 +98,8 @@ class Preprocessor(ABC):
         # Remove extra spaces, tabs, and new lines
         text = " ".join(text.split())
         return text
-    
-    
+
+
 class SpacyPreprocessor(Preprocessor):
 
 
@@ -101,7 +107,7 @@ class SpacyPreprocessor(Preprocessor):
         Preprocessor.__init__(self)
         self._suffix = 'spacy'
         self.__nlp = spacy.load("de_dep_news_trf")
-        
+
 
     def tokenize_and_lemmatize(self, text: str) -> list:
         lemmas = []
@@ -126,7 +132,7 @@ class NltkPreprocessor(Preprocessor):
         self.__lemmatizer = WordNetLemmatizer()
         self.__stopwords: set = set(
             (stopwords.words('german')) + list(string.punctuation))
-        
+
 
     def tokenize_and_lemmatize(self, text: str) -> list:
         lemmas = []

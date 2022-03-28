@@ -14,7 +14,7 @@ data plotter
 import os
 import matplotlib.pyplot as plt
 import pandas as pd
-from scipy.misc import face
+
 
 
 # =========================================================================== #
@@ -68,7 +68,6 @@ class Plotter:
                          box.width, box.height * 0.8])
         ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.175),
                   fancybox=True, shadow=True, ncol=5)
-
 
     def show(self):
         plt.show()

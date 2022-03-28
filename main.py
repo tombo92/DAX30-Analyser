@@ -11,13 +11,16 @@ main terminal outputs and interaction
 # =========================================================================== #
 #  SECTION: Imports
 # =========================================================================== #
+from shutil import rmtree
 import time
 import glob
 import os
+
+import warnings
 from typing import Callable
 from analyser import AiriAnalyser
-import warnings
-warnings.filterwarnings("ignore", category=UserWarning) # NLP is crying about mising cuda
+
+warnings.filterwarnings("ignore", category=UserWarning)  # NLP is crying about missing cuda
 
 
 # =========================================================================== #
@@ -169,6 +172,13 @@ class Application:
             method: Callable = self.analyser.analyse_keyword_occurences
             self.analyser.extractor = self.__choose_extractor()
             self.analyser.preprocessor = self.__choose_preprocessor()
+            data_dir: str = os.path.join(ABSOLUTE_PATH,
+                                         'ExtractedData',
+                                         'HeuristicData',
+                                         self.analyser.extractor,
+                                         self.analyser.preprocessor.processor_type)
+            delete_dir(data_dir)
+            os.makedirs(os.path.join(data_dir, 'KeywordFrequency'))
         elif first_value == 3:
             print(f"{self.__options4['1'][0]}...")
             method: Callable = self.analyser.create_plots
@@ -180,16 +190,22 @@ class Application:
         self.__execute_program(method, kwargs)
 
     def __execute_program(self, method, args):
+        self.durations: list = []
         for i, company in enumerate(COMPANIES):
-            start = time.time()
-            progressBar(i, len(COMPANIES),
-                        duration=estimate_time(self.durations, len(COMPANIES)-i))
-            company_path = os.path.join(ABSOLUTE_PATH, company, "*")
-            self.analyser.extract_company_data(company_path)
-            self.analyser.analyse_company_data(method, args)
-            end = time.time()
-            self.durations.append(int(end-start))
-            break
+            try:
+                start = time.time()
+                progressBar(i, len(COMPANIES),
+                            duration=estimate_time(self.durations, len(COMPANIES)-i))
+                company_path = os.path.join(ABSOLUTE_PATH, company, "*")
+                self.analyser.extract_company_data(company_path)
+                self.analyser.analyse_company_data(method, args)
+                end = time.time()
+                self.durations.append(int(end-start))
+            except FileNotFoundError:
+                print("\nIt seems like you missing a previous step.")
+                print("Please check what the README, because the script needs a defined sequence.\n")
+                return
+        self.analyser.summarize_absolute_keyword_occurence()
         progressBar(len(COMPANIES), len(COMPANIES),
                     duration=estimate_time(self.durations, 0))
 
@@ -232,6 +248,11 @@ def estimate_time(durations: list, number_of_iterations_left: int) -> str:
         left_duration = int(sum(durations)/len(durations) * number_of_iterations_left)
         return time.strftime('%H:%M:%S', time.gmtime(left_duration))
     return 'unknown'
+
+
+def delete_dir(path: str):
+    if os.path.exists(path):
+        rmtree(path)
 
 
 def main():
