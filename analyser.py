@@ -240,6 +240,9 @@ class AiriAnalyser:
                                                    f'output_{self.company}.png'))
 
     def summarize_absolute_keyword_occurence(self):
+        """
+        sums up the total the keyword occurence and saves it in a file
+        """
         if not self.__word_countings.empty:
             handler = ExcelHandler()
             handler.path = os.path.join(self.extractor,
@@ -251,9 +254,31 @@ class AiriAnalyser:
             handler.content['Sum'] = handler.content.sum(axis=1)
             handler.save_content()
 
-    def compare_technologies(self):
-        # TODO has to be implemented
-        pass
+    def compare_technologies(self, file: str):
+        path = os.path.join(ABSOLUTE_PATH, 'ExtractedData',
+                            'plots', 'technology_comparison',
+                            f'comparison_{self.company}.png')
+        if os.path.isfile(path):
+            return
+
+        data_collection: dict = self.__collect_data_from_different_technologies()
+
+        labels = {
+            "x_label": "year",
+            "y_bar_label": 'occurence',
+            "y_line_label": 'total occurence'
+        }
+        plotter = Plotter(colormap="tab20",
+                          title=self.__company,
+                          data=None,
+                          labels=labels,
+                          suptitle='Technology Comparison')
+        plotter.plot_subplots(
+            2, 2, plotter.plot_bar_chart_with_sum_up, data_collection)
+        plotter.save_figure(file_name=os.path.join('technology_comparison',
+                                                   f'comparison_{self.company}.png'))
+
+
 
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Private Methods
@@ -396,6 +421,25 @@ class AiriAnalyser:
                                     f'output_{self.__company}.xlsx')
         handler.read_data(index_column=True)
         return handler.content
+
+    def __collect_data_from_different_technologies(self) -> dict:
+        data_collection: dict = {}
+        technologies: dict = {
+            'extractors': ['pdfplumber', 'pypdf2'],
+            'preprocessors': ['nltk', 'spacy']
+        }
+        for extractor in technologies['extractors']:
+            for preprocessor in technologies['preprocessors']:
+                self.preprocessor = preprocessor
+                self.extractor = extractor
+                key = f"{preprocessor}/{extractor}"
+                df: pd.DataFrame = self.__read_heuristic_data()
+                annual_sum_up: pd.DataFrame = df.sum(axis=1).reset_index()
+                annual_sum_up.rename({0: "sum"}, inplace=True, axis=1)
+                data: dict = {'single': df,
+                              'total': annual_sum_up}
+                data_collection[key] = data
+        return data_collection
 
 
 # =========================================================================== #

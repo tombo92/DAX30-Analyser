@@ -56,7 +56,7 @@ class Application:
             '2': ['Read PDF (PyPDF2)', "Read in the pdf data with the 'PyPDF2'-library and save as txt-file. (~6min)"],
             '3': ['Tokenize With NLP (spacy)', 'Read in the previously extracted texts and lemmatize & tokenize them with spacy and save as csv-file. (~22h)'],
             '4': ['Tokenize With NLP (nltk)', 'Read in the previously extracted texts and lemmatize & tokenize them with nltk and save as csv-file. (~22h)'],
-            '5': ['Compare tectnologies', 'Read in the previously extracted tokens of both extracted texsts and compare them.']
+            '5': ['Compare technologies', 'Read in the previously extracted tokens of both extracted texsts and compare them.']
         }
         self.__options3: dict = {
             '1': ['Start Analysis', 'Perform a heuristic analysis with the given keywords and the previously created tokens.']
@@ -167,6 +167,14 @@ class Application:
                 self.analyser.extractor = self.__choose_extractor()
                 self.analyser.preprocessor = self.preprocessors[second_value]
                 method: Callable = self.analyser.tokenize
+            elif second_value == 5:
+                data_dir: str = os.path.join(ABSOLUTE_PATH,
+                                             'ExtractedData',
+                                             'plots',
+                                             'technology_comparison')
+                delete_dir(data_dir)
+                os.mkdir(data_dir)
+                method: Callable = self.analyser.compare_technologies
         elif first_value == 2:
             print(f"{self.__options3['1'][0]}...")
             method: Callable = self.analyser.analyse_keyword_occurences

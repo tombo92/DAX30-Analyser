@@ -124,10 +124,9 @@ class SpacyPreprocessor(Preprocessor):
 
 class NltkPreprocessor(Preprocessor):
 
-
     def __init__(self):
         Preprocessor.__init__(self)
-        nltk.download('wordnet')
+        nltk.download('wordnet', quiet=True)
         self._suffix = 'nltk'
         self.__lemmatizer = WordNetLemmatizer()
         self.__stopwords: set = set(
@@ -145,6 +144,7 @@ class NltkPreprocessor(Preprocessor):
             lemmas += [self.__lemmatizer.lemmatize(w) for w in doc if w not in self.__stopwords]
         self.content = lemmas
         return lemmas
+
 
 # =========================================================================== #
 #  SECTION: Function definitions

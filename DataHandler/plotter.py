@@ -12,9 +12,9 @@ data plotter
 #  SECTION: Imports
 # =========================================================================== #
 import os
+from typing import Callable
 import matplotlib.pyplot as plt
 import pandas as pd
-
 
 
 # =========================================================================== #
@@ -35,13 +35,19 @@ class Plotter:
     #  SUBSECTION: Constructor
     # ----------------------------------------------------------------------- #
 
-    def __init__(self, colormap: str, title: str, data: dict, labels: dict):
+    def __init__(self,
+                 colormap: str,
+                 title: str,
+                 data: dict,
+                 labels: dict,
+                 suptitle: str = None):
         self.colormap: str = colormap
         self.title: str = title
         self.data: dict = data
         self.labels: dict = labels
         self.figsize: tuple = (8, 4)
         self.line_color: str = 'orange'
+        self.suptitle: str = suptitle
 
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Getter/Setter
@@ -50,10 +56,11 @@ class Plotter:
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Public Methods
     # ----------------------------------------------------------------------- #
-    def plot_bar_chart_with_sum_up(self):
+    def plot_bar_chart_with_sum_up(self, axis: plt.axes = None):
         ax = self.__plot_bar_chart(x_label=self.labels["x_label"],
                                    y_label=self.labels["y_bar_label"],
-                                   data=self.data['single'])
+                                   data=self.data['single'],
+                                   axis=axis)
         self.__plot_line_chart(x_label=self.labels["x_label"],
                                y_label=self.labels["y_line_label"],
                                data=self.data['total'],
@@ -69,6 +76,36 @@ class Plotter:
         ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.175),
                   fancybox=True, shadow=True, ncol=5)
 
+    def plot_subplots(self, rows: int, colums: int, method: Callable, data_collection: dict):
+        fig, axs = plt.subplots(rows, colums)
+        plt.suptitle(f"{self.suptitle}: {self.title}" , fontsize="x-large")
+        for i in range(rows):
+            for j in range(colums):
+                key = list(data_collection.keys())[i * rows + j]
+                self.data = data_collection[key]
+                method(axis=axs[i, j])
+                axs[i, j].legend().set_visible(False)
+                axs[i, j].tick_params(axis="x", rotation=30)
+                if j == 0:
+                    plt.ylabel('')
+
+
+        axs[i, j].legend(loc='upper center', bbox_to_anchor=(-0.1, -0.6),
+                         fancybox=True, shadow=True, ncol=5)
+
+        for i, ax in enumerate(axs.flat):
+            ax.set_title('')
+            x_info, y_info = list(data_collection.keys())[i].split('/')
+            ax.set(xlabel=x_info,
+                   ylabel=y_info)
+
+        # Hide x labels and tick labels for top plots and y ticks for right plots.
+        for ax in axs.flat:
+            ax.label_outer()
+
+        fig.supxlabel(self.labels["x_label"])
+        fig.supylabel(self.labels["y_bar_label"])
+
     def show(self):
         plt.show()
 
@@ -79,7 +116,8 @@ class Plotter:
         except FileExistsError:
             # directory already exists
             pass
-        plt.savefig(os.path.join(path, file_name), dpi=250)
+        plt.savefig(os.path.join(path, file_name),
+                    dpi=300, bbox_inches='tight')
         plt.close()
 
     # ----------------------------------------------------------------------- #
@@ -105,12 +143,14 @@ class Plotter:
     def __plot_bar_chart(self,
                          x_label: str,
                          y_label: str,
-                         data: pd.DataFrame) -> plt.axes:
+                         data: pd.DataFrame,
+                         axis: plt.axes = None) -> plt.axes:
         ax = data.plot.bar(rot=0,
                            grid=True,
                            title=self.title,
                            colormap=self.colormap,
-                           figsize=self.figsize)
+                           figsize=self.figsize,
+                           ax=axis)
         ax.set_xlabel(x_label)
         ax.set_ylabel(y_label)
         self.__position_bar_chart_labels(axis=ax)
