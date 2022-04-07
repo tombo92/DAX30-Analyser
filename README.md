@@ -1,4 +1,4 @@
-# AIRI Fundamentals
+# DAX30 Analyser
 
 ## Introduction
 
@@ -9,7 +9,7 @@ In connection with a SHK ("**S**tudentische **H**ilfs**K**raft") project the AI 
 * plotting the extracted data
 * comparison of the results
 
-For the quantitative analysis and the plotting of the extracted data this tool is for. 
+For the quantitative analysis and the plotting of the extracted data this tool is for.
 
 ## Table of Contents
 
@@ -27,6 +27,8 @@ For the quantitative analysis and the plotting of the extracted data this tool i
 * The tool is written in Python and the version **3.8.6** is used.
 * **Installation of used libaries**
   The used libaries (that are not installed by default) are listed in the **`requirements.txt`** file.
+* to install the german nlp-model execute:
+  `python -m spacy download de_dep_news_trf`
   To install them use the command: 
   ```console
   pip install -r requirements.txt
@@ -44,7 +46,7 @@ if __name__ == '__main__':
     main(analyse_pdf=False)
 ```
 
-The `analyse_pdf` parameter is per default on True. 
+The `analyse_pdf` parameter is per default on True.
 
 ## Contributing
 
