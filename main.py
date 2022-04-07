@@ -59,10 +59,12 @@ class Application:
             '5': ['Compare technologies', 'Read in the previously extracted tokens of both extracted texsts and compare them.']
         }
         self.__options3: dict = {
-            '1': ['Start Analysis', 'Perform a heuristic analysis with the given keywords and the previously created tokens.']
+            '1': ['Start Analysis', 'Perform a heuristic analysis with the given keywords and the previously created tokens.'],
+            '2': ['Summarize Results', 'Perform a statistic analysis of the results from different technologies.']
         }
         self.__options4: dict = {
-            '1': ['Start Plotting', 'Plot the previously extracted heuristic data.']
+            '1': ['Start Plotting', 'Plot the previously extracted heuristic data.'],
+            '2': ['Plot Summarized Data', 'Plot the previously summarized heuristic data.']
         }
         self.__options: list = [self.__options1,
                                 self.__options2,
@@ -176,22 +178,40 @@ class Application:
                 os.mkdir(data_dir)
                 method: Callable = self.analyser.compare_technologies
         elif first_value == 2:
-            print(f"{self.__options3['1'][0]}...")
-            method: Callable = self.analyser.analyse_keyword_occurences
-            self.analyser.extractor = self.__choose_extractor()
-            self.analyser.preprocessor = self.__choose_preprocessor()
-            data_dir: str = os.path.join(ABSOLUTE_PATH,
-                                         'ExtractedData',
-                                         'HeuristicData',
-                                         self.analyser.extractor,
-                                         self.analyser.preprocessor.processor_type)
-            delete_dir(data_dir)
-            os.makedirs(os.path.join(data_dir, 'KeywordFrequency'))
+            print(f"{self.__options3[str(second_value)][0]}...")
+            if second_value == 1:
+                method: Callable = self.analyser.analyse_keyword_occurences
+                self.analyser.extractor = self.__choose_extractor()
+                self.analyser.preprocessor = self.__choose_preprocessor()
+                data_dir: str = os.path.join(ABSOLUTE_PATH,
+                                            'ExtractedData',
+                                            'HeuristicData',
+                                            self.analyser.extractor,
+                                            self.analyser.preprocessor.processor_type)
+                delete_dir(data_dir)
+                os.makedirs(os.path.join(data_dir, 'KeywordFrequency'))
+            elif second_value == 2:
+                data_dir: str = os.path.join(ABSOLUTE_PATH,
+                                             'ExtractedData',
+                                             'HeuristicData',
+                                             'statistic_data')
+                delete_dir(data_dir)
+                os.mkdir(data_dir)
+                method: Callable = self.analyser.summarize_results
         elif first_value == 3:
-            print(f"{self.__options4['1'][0]}...")
-            method: Callable = self.analyser.create_plots
-            self.analyser.extractor = self.__choose_extractor()
-            self.analyser.preprocessor = self.__choose_preprocessor()
+            print(f"{self.__options4[str(second_value)][0]}...")
+            if second_value == 1:
+                method: Callable = self.analyser.create_plots
+                self.analyser.extractor = self.__choose_extractor()
+                self.analyser.preprocessor = self.__choose_preprocessor()
+            if second_value == 2:
+                data_dir: str = os.path.join(ABSOLUTE_PATH,
+                                             'ExtractedData',
+                                             'plots',
+                                             'summarized')
+                delete_dir(data_dir)
+                os.mkdir(data_dir)
+                method: Callable = self.analyser.plot_summarized_results
         if method is None:
             print('Need to be implemented, please choose other option :)')
             return

@@ -57,15 +57,18 @@ class ExcelHandler:
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Public Methods
     # ----------------------------------------------------------------------- #
-    def save_content(self, sheet: str = 'Sheet1'):
+    def save_content(self, sheets: list = ['Sheet1'],
+                     additional_content: list = [None]):
         writer = pd.ExcelWriter(self.__file_path, engine="xlsxwriter")
         try:
             os.makedirs(os.path.dirname(self.__file_path))
         except FileExistsError:
             # directory already exists
             pass
-        self.content.to_excel(writer, sheet_name=sheet)
-        self._auto_adjust_column_width(writer, sheet)
+        content: list = [self.content] + additional_content
+        for i, sheet in enumerate(sheets):
+            content[i].to_excel(writer, sheet_name=sheet)
+            self._auto_adjust_column_width(writer, sheet)
         writer.save()
         writer.close()
 

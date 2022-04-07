@@ -15,6 +15,7 @@ import glob
 import os
 import re
 from typing import Callable
+from matplotlib.pyplot import axis
 
 import pandas as pd
 from DataHandler.excel_handler import ExcelHandler
@@ -278,7 +279,57 @@ class AiriAnalyser:
         plotter.save_figure(file_name=os.path.join('technology_comparison',
                                                    f'comparison_{self.company}.png'))
 
+    def summarize_results(self, file: str):
+        path = os.path.join(ABSOLUTE_PATH, 'ExtractedData',
+                            'HeuristicData', 'statistic_data',
+                            f'{self.company}.xlsx')
+        if os.path.isfile(path):
+            return
+        data_collection: dict = self.__collect_data_from_different_technologies()
 
+        df_concat: pd.DataFrame = pd.DataFrame()
+        for technology in data_collection:
+            df_concat = pd.concat(
+                [df_concat, data_collection[technology]['single']])
+        means: pd.DataFrame = df_concat.groupby(df_concat.index).mean()
+        # (ddof=0 disables Bessel's Correction
+        stds: pd.DataFrame = df_concat.groupby(df_concat.index).std(ddof=0)
+        percentage_error: pd.DataFrame = stds.div(means).multiply(100)
+        handler = ExcelHandler(path)
+        handler.content = means
+        handler.save_content(sheets=['mean', 'std', 'std in %'],
+                             additional_content=[stds, percentage_error])
+
+    def plot_summarized_results(self, file: str):
+        path = os.path.join(ABSOLUTE_PATH,
+                            'ExtractedData',
+                            'plots',
+                            'summarized',
+                            f'{self.company}.png')
+        if os.path.isfile(path):
+            return
+
+        handler = ExcelHandler(os.path.join(ABSOLUTE_PATH, 'ExtractedData',
+                                            'HeuristicData', 'statistic_data',
+                                            f'{self.company}.xlsx'))
+        handler.read_data(index_column=True)
+        df: pd.DataFrame = handler.content
+        annual_sum_up: pd.DataFrame = df.sum(axis=1).reset_index()
+        annual_sum_up.rename({0: "sum"}, inplace=True, axis=1)
+        data: dict = {'single': df,
+                      'total': annual_sum_up}
+
+        labels = {
+            "x_label": "year",
+            "y_bar_label": 'occurence',
+            "y_line_label": 'absolute occurence of technical terms'
+        }
+        plotter = Plotter(colormap="tab20",
+                          title=self.__company,
+                          data=data,
+                          labels=labels)
+        plotter.plot_bar_chart_with_sum_up()
+        plotter.save_figure(file_name=path)
 
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Private Methods
