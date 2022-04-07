@@ -1,4 +1,4 @@
-# AIRI Fundamentals
+# DAX30 Analyser
 
 ## Introduction
 

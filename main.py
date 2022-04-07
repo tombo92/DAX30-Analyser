@@ -18,7 +18,7 @@ import os
 
 import warnings
 from typing import Callable
-from analyser import AiriAnalyser
+from analyser import DAX30Analyser
 
 warnings.filterwarnings("ignore", category=UserWarning)  # NLP is crying about missing cuda
 
@@ -71,7 +71,7 @@ class Application:
                                 self.__options3,
                                 self.__options4]
         self.preprocessors: str = {3: 'spacy', 4: 'nltk'}
-        self.analyser = AiriAnalyser()
+        self.analyser = DAX30Analyser()
         self.durations: list = []
 
     # ----------------------------------------------------------------------- #

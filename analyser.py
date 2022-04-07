@@ -15,7 +15,6 @@ import glob
 import os
 import re
 from typing import Callable
-from matplotlib.pyplot import axis
 
 import pandas as pd
 from DataHandler.excel_handler import ExcelHandler
@@ -33,7 +32,7 @@ ABSOLUTE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 # =========================================================================== #
 #  SECTION: Class definitions
 # =========================================================================== #
-class AiriAnalyser:
+class DAX30Analyser:
     """
     AI Readiness Index Analyser class
     """
