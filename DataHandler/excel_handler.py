@@ -65,10 +65,12 @@ class ExcelHandler:
         except FileExistsError:
             # directory already exists
             pass
-        content: list = [self.content] + additional_content
-        for i, sheet in enumerate(sheets):
-            content[i].to_excel(writer, sheet_name=sheet)
-            self._auto_adjust_column_width(writer, sheet)
+        contents: list = [self.content] + additional_content
+        if len(contents) > len(sheets):
+            sheets += [f'Sheet{i}' for i in range(len(contents) - len(sheets))]
+        for i, content in enumerate(contents):
+            content.to_excel(writer, sheet_name=sheets[i])
+            self._auto_adjust_column_width(writer, sheets[i])
         writer.save()
         writer.close()
 
