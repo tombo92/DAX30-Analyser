@@ -27,9 +27,12 @@ For the quantitative analysis and the plotting of the extracted data this tool i
 * The tool is written in Python and the version **3.8.6** is used.
 * **Installation of used libaries**
   The used libaries (that are not installed by default) are listed in the **`requirements.txt`** file.
-  To install them use the command: *pip install -r `requirements.txt`*
 * to install the german nlp-model execute:
   `python -m spacy download de_dep_news_trf`
+  To install them use the command: 
+  ```console
+  pip install -r requirements.txt
+  ```
 
 ### Usage
 
