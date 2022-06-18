@@ -59,6 +59,17 @@ class ExcelHandler:
     # ----------------------------------------------------------------------- #
     def save_content(self, sheets: list = ['Sheet1'],
                      additional_content: list = [None]):
+        """
+        save content into excel file
+
+        Parameters
+        ----------
+        sheets : list, optional
+            name of the sheets, by default ['Sheet1']
+        additional_content : list, optional
+            additional content that should be saved into the file,
+            by default [None]
+        """
         writer = pd.ExcelWriter(self.__file_path, engine="xlsxwriter")
         try:
             os.makedirs(os.path.dirname(self.__file_path))
@@ -69,18 +80,21 @@ class ExcelHandler:
         if len(contents) > len(sheets):
             sheets += [f'Sheet{i}' for i in range(len(contents) - len(sheets))]
         for i, content in enumerate(contents):
-            content.to_excel(writer, sheet_name=sheets[i])
-            self._auto_adjust_column_width(writer, sheets[i])
+            if content is not None:
+                content.to_excel(writer, sheet_name=sheets[i])
+                self._auto_adjust_column_width(writer, sheets[i])
         writer.save()
         writer.close()
 
-    def read_data(self, index_column: bool = True):
+    def read_data(self, index_column: bool = True, sheet_name = 0):
         if index_column:
             self.content = pd.read_excel(
-                self.__file_path, index_col=0, header=0, engine='openpyxl')
+                self.__file_path, index_col=0, header=0,
+                engine='openpyxl', sheet_name=sheet_name)
         else:
             self.content = pd.read_excel(
-                self.__file_path, header=0, engine='openpyxl')
+                self.__file_path, header=0, engine='openpyxl',
+                sheet_name=sheet_name)
 
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Private Methods

@@ -195,7 +195,7 @@ class DAX30Analyser:
         self.__preprocessor.tokenize_and_lemmatize(handler.content)
         self.__preprocessor.save_tokens(self.__company, self.__current_year, self.extractor)
 
-    def analyse_keyword_occurences(self, file: str):
+    def analyse_keyword_occurences(self, _):
         """
         count the given keywords in a list of tokens
 
@@ -209,13 +209,13 @@ class DAX30Analyser:
             self.__company, self.__current_year, self.extractor)
         self.__heuristic_analysis(tokens)
 
-    def create_plots(self, file: str):
+    def create_plots(self, _):
         """
         create plots out of the statistic data
 
         Parameters
         ----------
-        file : str
+        _
             unused variable, can not be removed
             conservation of the used Callable structure
         """
@@ -224,7 +224,6 @@ class DAX30Analyser:
         annual_sum_up.rename({0: "sum"}, inplace=True, axis=1)
         data: dict = {'single': df,
                       'total': annual_sum_up}
-
         labels = {
             "x_label": "year",
             "y_bar_label": 'occurence',
@@ -243,26 +242,34 @@ class DAX30Analyser:
         """
         sums up the total the keyword occurence and saves it in a file
         """
-        if not self.__word_countings.empty:
+        if not (self.__word_countings[self.__company] == 0).all():
+            print(self.__word_countings, self.__word_countings.empty)
             handler = ExcelHandler()
             handler.path = os.path.join(self.extractor,
                                         self.preprocessor.processor_type,
                                         "KeywordFrequency",
                                         'keyword_validation.xlsx')
-
             handler.read_data(True)
             handler.content['Sum'] = handler.content.sum(axis=1)
             handler.save_content()
 
     def compare_technologies(self, file: str):
+        """
+        compare the used analysis technologies and sum up the results
+        in plots
+
+        Parameters
+        ----------
+        file: str
+            unused variable, can not be removed
+            conservation of the used Callable structure
+        """
         path = os.path.join(ABSOLUTE_PATH, 'ExtractedData',
                             'plots', 'technology_comparison',
                             f'comparison_{self.company}.png')
         if os.path.isfile(path):
             return
-
         data_collection: dict = self.__collect_data_from_different_technologies()
-
         labels = {
             "x_label": "year",
             "y_bar_label": 'occurence',
@@ -279,13 +286,23 @@ class DAX30Analyser:
                                                    f'comparison_{self.company}.png'))
 
     def summarize_results(self, file: str):
+        """
+        summarize the results for different technologies and
+        perform a statistic analysis (mean, std). the results
+        are saved in a excel file.
+
+        Parameters
+        ----------
+        file: str
+            unused variable, can not be removed
+            conservation of the used Callable structure
+        """
         path = os.path.join(ABSOLUTE_PATH, 'ExtractedData',
                             'HeuristicData', 'statistic_data',
                             f'{self.company}.xlsx')
         if os.path.isfile(path):
             return
         data_collection: dict = self.__collect_data_from_different_technologies()
-
         df_concat: pd.DataFrame = pd.DataFrame()
         for technology in data_collection:
             df_concat = pd.concat(
@@ -300,6 +317,15 @@ class DAX30Analyser:
                              additional_content=[stds, percentage_error])
 
     def plot_summarized_results(self, file: str):
+        """
+        plot the data from the summarized data file
+
+        Parameters
+        ----------
+        file: str
+            unused variable, can not be removed
+            conservation of the used Callable structure
+        """
         path = os.path.join(ABSOLUTE_PATH,
                             'ExtractedData',
                             'plots',
@@ -307,7 +333,6 @@ class DAX30Analyser:
                             f'{self.company}.png')
         if os.path.isfile(path):
             return
-
         handler = ExcelHandler(os.path.join(ABSOLUTE_PATH, 'ExtractedData',
                                             'HeuristicData', 'statistic_data',
                                             f'{self.company}.xlsx'))
@@ -317,7 +342,6 @@ class DAX30Analyser:
         annual_sum_up.rename({0: "sum"}, inplace=True, axis=1)
         data: dict = {'single': df,
                       'total': annual_sum_up}
-
         labels = {
             "x_label": "year",
             "y_bar_label": 'occurence',
@@ -329,6 +353,64 @@ class DAX30Analyser:
                           labels=labels)
         plotter.plot_bar_chart_with_sum_up()
         plotter.save_figure(file_name=path)
+
+    def create_category_summary(self, file: str):
+        """
+        sum up the results for all companies and technologies for each
+        keyword category over the time. the result is exported as a
+        excel file
+
+        Parameters
+        ----------
+        file: str
+            unused variable, can not be removed
+            conservation of the used Callable structure
+        """
+        handler = ExcelHandler()
+        for category in self.__header:
+            path = os.path.join(ABSOLUTE_PATH,
+                                'ExtractedData',
+                                'HeuristicData',
+                                'statistic_data',
+                                'summaries',
+                                f'{category}_summary.xlsx')
+            if os.path.isfile(path):
+                continue
+            data_collection: dict = self.__collect_summarized_company_data(category)
+            means: pd.DataFrame = pd.DataFrame()
+            stds: pd.DataFrame = pd.DataFrame()
+            for key in data_collection:
+                means = pd.concat(
+                    [means,
+                     data_collection[key]['mean']], axis=1)
+                stds = pd.concat(
+                    [stds, data_collection[key]['std']], axis=1)
+            means['pooled_mean'] = means.mean(axis=1)
+            stds['pooled_std'] = stds.mean(axis=1)
+            handler.path = path
+            handler.content = means
+            handler.save_content(sheets=['mean', 'std'],
+                                 additional_content=[stds])
+
+    def plot_category_summary(self, file: str):
+        path = os.path.join(ABSOLUTE_PATH, "ExtractedData", "plots")
+        file_name = os.path.join('summarized', 'category_overview.png')
+        if os.path.isfile(os.path.join(path, file_name)):
+            return
+        data: dict = self.__pool_summarized_company_data()
+        labels = {
+            "x_label": "year",
+            "y_label": 'occurence'
+        }
+        plotter = Plotter(colormap="tab20",
+                          title='Category Overview',
+                          data=data,
+                          labels=labels)
+        plotter.plot_line_charts(error_bars=False)
+        plotter.save_figure(file_name)
+        file_name = os.path.join('summarized', 'category_overview_with_errors.png')
+        plotter.plot_line_charts(error_bars=True)
+        plotter.save_figure(file_name)
 
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Private Methods
@@ -473,6 +555,16 @@ class DAX30Analyser:
         return handler.content
 
     def __collect_data_from_different_technologies(self) -> dict:
+        """
+        collect the data for the different used analysis technologies
+        by reading the created excel data files
+
+        Returns
+        -------
+        dict
+            data_collection dictionary where each technology and the single/total
+            data is included
+        """
         data_collection: dict = {}
         technologies: dict = {
             'extractors': ['pdfplumber', 'pypdf2'],
@@ -491,6 +583,50 @@ class DAX30Analyser:
                 data_collection[key] = data
         return data_collection
 
+    def __collect_summarized_company_data(self, category: str) -> dict:
+        data_collection: dict = {}
+        handler = ExcelHandler()
+        companies: list = [re.findall(r"\\(.*?)\\", x)[0] for x in glob.glob("assets/PDF-Data/*/")]
+        for company in companies:
+            data_collection[company] = dict()
+            path = os.path.join(ABSOLUTE_PATH, 'ExtractedData',
+                                'HeuristicData', 'statistic_data',
+                                f'{company}.xlsx')
+            handler.path = path
+            for sheet in ['mean', 'std']:
+                handler.read_data(index_column=True, sheet_name=sheet)
+                data: pd.DataFrame = handler.content[category]
+                data_collection[company][sheet] = data.reset_index().rename(
+                    columns={category: company, 'index': 'year'}).set_index('year')
+        return data_collection
+
+    def __pool_summarized_company_data(self) -> dict:
+        handler = ExcelHandler()
+        data: dict = {
+            'pooled_mean': pd.DataFrame(),
+            'pooled_std': pd.DataFrame()
+            }
+        for category in self.__header:
+            path = os.path.join(ABSOLUTE_PATH,
+                                'ExtractedData',
+                                'HeuristicData',
+                                'statistic_data',
+                                'summaries',
+                                f'{category}_summary.xlsx')
+            handler.path = path
+            handler.read_data(sheet_name='mean')
+            mean = handler.content['pooled_mean'].reset_index().rename(
+                columns={'pooled_mean': category}).set_index('year')
+            data['pooled_mean'] = pd.concat(
+                [data['pooled_mean'],
+                 mean], axis=1)
+            handler.read_data(sheet_name='std')
+            std = handler.content['pooled_std'].reset_index().rename(
+                columns={'pooled_std': category}).set_index('year')
+            data['pooled_std'] = pd.concat(
+                [data['pooled_std'],
+                 std], axis=1)
+        return data
 
 # =========================================================================== #
 #  SECTION: Function definitions

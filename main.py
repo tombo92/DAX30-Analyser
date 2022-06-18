@@ -59,12 +59,14 @@ class Application:
             '5': ['Compare technologies', 'Read in the previously extracted tokens of both extracted texsts and compare them.']
         }
         self.__options3: dict = {
-            '1': ['Start Analysis', 'Perform a heuristic analysis with the given keywords and the previously created tokens.'],
-            '2': ['Summarize Results', 'Perform a statistic analysis of the results from different technologies.']
+            '1': ['Start Company Analysis', 'Perform a heuristic analysis with the given keywords and the previously created tokens of each company.'],
+            '2': ['Summarize Technology Results', 'Perform a statistic analysis of the results from different technologies.'],
+            '3': ['Summarize All Results', 'Summarize the results of all technologies and companies per category and perform a statistic analysis.']
         }
         self.__options4: dict = {
-            '1': ['Start Plotting', 'Plot the previously extracted heuristic data.'],
-            '2': ['Plot Summarized Data', 'Plot the previously summarized heuristic data.']
+            '1': ['Start Single Plotting', 'Plot the previously extracted heuristic data for each company.'],
+            '2': ['Plot Summarized Technology Data', 'Plot the previously summarized heuristic data for the different used technologies.'],
+            '3': ['Plot Category Overview', 'Plot the results of all technologies and companies per category and perform a statistic analysis']
         }
         self.__options: list = [self.__options1,
                                 self.__options2,
@@ -154,64 +156,15 @@ class Application:
                 print("Invalid input. Please enter 'y'/'yes' or 'n'/'no'.")
 
     def __second_level_dialog(self, first_value: int, second_value: int):
-        # TODO: make modular and check if previous steps are fulfilled
+        # TODO: check if previous steps are fulfilled
         method: Callable = None
         kwargs: dict = {}
         if first_value == 1:
-            print(f"{self.__options2[str(second_value)][0]}...")
-            if second_value == 1:
-                method: Callable = self.analyser.extract_text_from_pdf
-                self.analyser.extractor = 'pdfplumber'
-            elif second_value == 2:
-                method: Callable = self.analyser.extract_text_from_pdf
-                self.analyser.extractor = 'pypdf2'
-            elif second_value in [3, 4]:
-                self.analyser.extractor = self.__choose_extractor()
-                self.analyser.preprocessor = self.preprocessors[second_value]
-                method: Callable = self.analyser.tokenize
-            elif second_value == 5:
-                data_dir: str = os.path.join(ABSOLUTE_PATH,
-                                             'ExtractedData',
-                                             'plots',
-                                             'technology_comparison')
-                delete_dir(data_dir)
-                os.mkdir(data_dir)
-                method: Callable = self.analyser.compare_technologies
+            method = self.__second_level_dialog_branch_1(second_value)
         elif first_value == 2:
-            print(f"{self.__options3[str(second_value)][0]}...")
-            if second_value == 1:
-                method: Callable = self.analyser.analyse_keyword_occurences
-                self.analyser.extractor = self.__choose_extractor()
-                self.analyser.preprocessor = self.__choose_preprocessor()
-                data_dir: str = os.path.join(ABSOLUTE_PATH,
-                                            'ExtractedData',
-                                            'HeuristicData',
-                                            self.analyser.extractor,
-                                            self.analyser.preprocessor.processor_type)
-                delete_dir(data_dir)
-                os.makedirs(os.path.join(data_dir, 'KeywordFrequency'))
-            elif second_value == 2:
-                data_dir: str = os.path.join(ABSOLUTE_PATH,
-                                             'ExtractedData',
-                                             'HeuristicData',
-                                             'statistic_data')
-                delete_dir(data_dir)
-                os.mkdir(data_dir)
-                method: Callable = self.analyser.summarize_results
+            method = self.__second_level_dialog_branch_2(second_value)
         elif first_value == 3:
-            print(f"{self.__options4[str(second_value)][0]}...")
-            if second_value == 1:
-                method: Callable = self.analyser.create_plots
-                self.analyser.extractor = self.__choose_extractor()
-                self.analyser.preprocessor = self.__choose_preprocessor()
-            if second_value == 2:
-                data_dir: str = os.path.join(ABSOLUTE_PATH,
-                                             'ExtractedData',
-                                             'plots',
-                                             'summarized')
-                delete_dir(data_dir)
-                os.mkdir(data_dir)
-                method: Callable = self.analyser.plot_summarized_results
+            method = self.__second_level_dialog_branch_3(second_value)
         if method is None:
             print('Need to be implemented, please choose other option :)')
             return
@@ -233,6 +186,7 @@ class Application:
                 print("\nIt seems like you missing a previous step.")
                 print("Please check what the README, because the script needs a defined sequence.\n")
                 return
+            break
         self.analyser.summarize_absolute_keyword_occurence()
         progressBar(len(COMPANIES), len(COMPANIES),
                     duration=estimate_time(self.durations, 0))
@@ -258,6 +212,85 @@ class Application:
             return 'spacy'
         if user_input == '2':
             return 'nltk'
+
+    def __second_level_dialog_branch_1(self, value: int) -> Callable:
+        method: Callable = None
+        print(f"{self.__options2[str(value)][0]}...")
+        if value == 1:
+            method: Callable = self.analyser.extract_text_from_pdf
+            self.analyser.extractor = 'pdfplumber'
+        elif value == 2:
+            method: Callable = self.analyser.extract_text_from_pdf
+            self.analyser.extractor = 'pypdf2'
+        elif value in [3, 4]:
+            self.analyser.extractor = self.__choose_extractor()
+            self.analyser.preprocessor = self.preprocessors[value]
+            method: Callable = self.analyser.tokenize
+        elif value == 5:
+            data_dir: str = os.path.join(ABSOLUTE_PATH,
+                                         'ExtractedData',
+                                         'plots',
+                                         'technology_comparison')
+            delete_dir(data_dir)
+            os.mkdir(data_dir)
+            method: Callable = self.analyser.compare_technologies
+        return method
+
+    def __second_level_dialog_branch_2(self, value: int) -> Callable:
+        method: Callable = None
+        print(f"{self.__options3[str(value)][0]}...")
+        if value == 1:
+            method: Callable = self.analyser.analyse_keyword_occurences
+            self.analyser.extractor = self.__choose_extractor()
+            self.analyser.preprocessor = self.__choose_preprocessor()
+            data_dir: str = os.path.join(ABSOLUTE_PATH,
+                                         'ExtractedData',
+                                         'HeuristicData',
+                                         self.analyser.extractor,
+                                         self.analyser.preprocessor.processor_type)
+            delete_dir(data_dir)
+            os.makedirs(os.path.join(data_dir, 'KeywordFrequency'))
+        elif value == 2:
+            data_dir: str = os.path.join(ABSOLUTE_PATH,
+                                         'ExtractedData',
+                                         'HeuristicData',
+                                         'statistic_data')
+            delete_dir(data_dir)
+            os.mkdir(data_dir)
+            method: Callable = self.analyser.summarize_results
+        elif value == 3:
+            data_dir: str = os.path.join(ABSOLUTE_PATH,
+                                         'ExtractedData',
+                                         'HeuristicData',
+                                         'statistic_data',
+                                         'summaries')
+            delete_dir(data_dir)
+            os.mkdir(data_dir)
+            method: Callable = self.analyser.create_category_summary
+        return method
+
+    def __second_level_dialog_branch_3(self, value: int) -> Callable:
+        method: Callable = None
+        print(f"{self.__options4[str(value)][0]}...")
+        if value == 1:
+            method: Callable = self.analyser.create_plots
+            self.analyser.extractor = self.__choose_extractor()
+            self.analyser.preprocessor = self.__choose_preprocessor()
+        elif value == 2:
+            data_dir: str = os.path.join(ABSOLUTE_PATH,
+                                         'ExtractedData',
+                                         'plots',
+                                         'summarized')
+            delete_dir(data_dir)
+            os.mkdir(data_dir)
+            method: Callable = self.analyser.plot_summarized_results
+        elif value == 3:
+            file_path: str = os.path.join(ABSOLUTE_PATH, "ExtractedData", "plots",
+                                          'summarized', 'category_overview.png')
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+            method: Callable = self.analyser.plot_category_summary
+        return method
 
 
 # =========================================================================== #
@@ -290,8 +323,8 @@ def main():
 # =========================================================================== #
 #  SECTION: Main Body
 # =========================================================================== #
-
 if __name__ == '__main__':
     main()
+
 
 

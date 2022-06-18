@@ -13,6 +13,7 @@ data plotter
 # =========================================================================== #
 import os
 from typing import Callable
+from matplotlib.cm import get_cmap
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -119,6 +120,32 @@ class Plotter:
         plt.savefig(os.path.join(path, file_name),
                     dpi=300, bbox_inches='tight')
         plt.close()
+
+    def plot_line_charts(self, error_bars=False):
+        df = self.data['pooled_mean']
+        if error_bars:
+            errors = self.data['pooled_std']
+            ax = df.plot(colormap=self.colormap,
+                         figsize=self.figsize,
+                         xticks=df.index,
+                         grid=True,
+                         title=self.title)
+            for i, category in enumerate(list(df)):
+                ax.fill_between(
+                    df.index,
+                    df[category] - errors[category],
+                    df[category] + errors[category],
+                    alpha=0.25 + 0.05*i,
+                    color=ax.get_lines()[i].get_color())
+        else:
+            df.plot(colormap=self.colormap,
+                    figsize=self.figsize,
+                    xticks=df.index,
+                    grid=True,
+                    title=self.title)
+        plt.ylabel(self.labels['y_label'])
+        plt.xlabel(self.labels['x_label'])
+
 
     # ----------------------------------------------------------------------- #
     #  SUBSECTION: Private Methods
