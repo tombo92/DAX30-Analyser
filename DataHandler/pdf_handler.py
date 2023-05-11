@@ -60,7 +60,7 @@ class PdfHandler:
     def extract_data_with_pypdf2(self):
         self.__content = ''
         with open(self.__encoded_file, mode='rb') as f:
-            reader = PyPDF2.PdfFileReader(f)
+            reader = PyPDF2.PdfReader(f)
             for _, page in enumerate(reader.pages):
                 try:
                     self.__content += '\n' + page.extractText()
