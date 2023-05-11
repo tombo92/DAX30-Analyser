@@ -69,8 +69,9 @@ class ExcelHandler:
         if len(contents) > len(sheets):
             sheets += [f'Sheet{i}' for i in range(len(contents) - len(sheets))]
         for i, content in enumerate(contents):
-            content.to_excel(writer, sheet_name=sheets[i])
-            self._auto_adjust_column_width(writer, sheets[i])
+            if content is not None:
+                content.to_excel(writer, sheet_name=sheets[i])
+                self._auto_adjust_column_width(writer, sheets[i])
         writer.save()
         writer.close()
 
