@@ -49,7 +49,7 @@ class PdfHandler:
     # ----------------------------------------------------------------------- #
     def extract_data_with_pdf_plumber(self):
         self.__content = ''
-        with pdfplumber.open(self.__encoded_file) as pdf:
+        with pdfplumber.open(self.file_path) as pdf:
             for _, page in enumerate(pdf.pages):
                 try:
                     self.__content += '\n' + page.extract_text()
